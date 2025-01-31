@@ -1,10 +1,22 @@
+"useclient";
+
 import { experience } from "../data/experience";
 
-export default function Timeline() {
+interface TimelineProps {
+  onClose: () => void;
+}
+
+export default function Timeline({ onClose }: TimelineProps) {
   return (
     <section id="experience" className="py-20">
-      <h2 className="text-3xl font-bold text-center mb-12">Experience</h2>
-      <div className="max-w-4xl mx-auto px-4">
+      <div className="max-w-4xl mx-auto px-4 relative">
+        <button
+          onClick={onClose}
+          className="absolute right-6 top-0 text-blue-500 hover:text-blue-400 transition-colors"
+        >
+          ✕
+        </button>
+        <h2 className="text-3xl font-bold text-center mb-12">Experience</h2>
         <div className="space-y-8">
           {experience.map((item, index) => (
             <div

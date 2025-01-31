@@ -19,7 +19,7 @@ export default function Home() {
             : "opacity-0 h-0 overflow-hidden"
         }`}
       >
-        <Timeline />
+        <Timeline onClose={() => setShowExperiences(false)} />
       </div>
       <Skills />
     </main>
