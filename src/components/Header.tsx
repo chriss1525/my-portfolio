@@ -3,7 +3,11 @@
 import Link from "next/link";
 import { Github, Linkedin, Mail } from "lucide-react";
 
-export default function Header() {
+interface HeaderProps {
+  onOpenExperiences: () => void;
+}
+
+export default function Header({ onOpenExperiences }: HeaderProps) {
   return (
     <header className="sticky top-0 z-50 bg-gray-900/50 backdrop-blur-lg shadow-sm">
       <nav className="container mx-auto p-4 flex justify-between items-center">
@@ -11,9 +15,9 @@ export default function Header() {
           Christine Okoth
         </Link>
         <div className="flex space-x-6">
-          <Link href="#experience" className="hover:text-blue-500">
+          <button onClick={onOpenExperiences} className="hover:text-blue-500">
             Experience
-          </Link>
+          </button>
           <Link href="#skills" className="hover:text-blue-500">
             Skills
           </Link>
