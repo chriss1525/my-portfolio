@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Github, Linkedin, Mail } from "lucide-react";
+import { Github, Linkedin, Mail, ChevronDown } from "lucide-react";
 
 interface HeaderProps {
   onOpenExperiences: () => void;
@@ -15,8 +15,12 @@ export default function Header({ onOpenExperiences }: HeaderProps) {
           Christine Okoth
         </Link>
         <div className="flex space-x-6">
-          <button onClick={onOpenExperiences} className="hover:text-blue-500">
+          <button 
+            onClick={onOpenExperiences} 
+            className="hover:text-blue-500 flex items-center gap-1"
+          >
             Experience
+            <ChevronDown className="w-4 h-4" />
           </button>
           <Link href="#skills" className="hover:text-blue-500">
             Skills

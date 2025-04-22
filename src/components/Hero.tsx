@@ -1,49 +1,39 @@
 "use client";
+import Image from "next/image";
+import React from "react";
 
-import { TypeAnimation } from "react-type-animation";
-
-interface HeroProps {
-  onOpenExperiences: () => void;
-}
-
-export default function Hero({ onOpenExperiences }: HeroProps) {
+const Hero = () => {
   return (
-    <section className="min-h-[60vh] flex items-center justify-center text-center relative">
-      <div className="animate-fadeIn">
-        <h1 className="text-5xl font-bold mb-4 animate-slideDown">
-          Hi, I am <span className="text-blue-500">Christine Okoth</span>
-        </h1>
-        <TypeAnimation
-          sequence={[
-            "Blockchain Developer",
-            1000,
-            "ICP Expert",
-            1000,
-            "Backend Engineer",
-            1000,
-            "Rust Developer",
-            1000,
-          ]}
-          wrapper="span"
-          speed={50}
-          repeat={Infinity}
-          className="text-2xl text-gray-400"
-        />
-        <div className="mt-8 space-x-4 animate-slideUp">
-          <button
-            onClick={onOpenExperiences}
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-all"
-          >
-            View My Work
-          </button>
-          <a
-            href="mailto:okothchris15@gmail.com"
-            className="border border-blue-600 text-blue-600 px-6 py-3 rounded-lg hover:bg-blue-600 hover:text-white transition-all"
-          >
-            Contact Me
-          </a>
+    <section className="w-full px-6 md:px-16 py-16 bg-background">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex flex-col-reverse md:flex-row items-center justify-center gap-10">
+          <div className="flex-1 text-center">
+            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+              Christine Okoth
+            </h1>
+            <p className="text-lg md:text-xl text-muted-foreground mb-6">
+              Blockchain Developer | Web3 Engineer | AI Explorer
+            </p>
+
+            <p className="text-base md:text-lg text-muted-foreground leading-relaxed max-w-xl mx-auto">
+            Blockchain developer crafting secure, human-centered Web3 tools — from sustainable networks to smart economies.
+            </p>
+          </div>
+
+          <div className="w-48 h-48 md:w-64 md:h-64 rounded-full overflow-hidden shadow-xl border-4 border-primary">
+            <Image
+              src="/christine.jpg"
+              alt="Christine Okoth"
+              width={300}
+              height={300}
+              className="object-cover w-full h-full"
+              priority
+            />
+          </div>
         </div>
       </div>
     </section>
   );
-}
+};
+
+export default Hero;
