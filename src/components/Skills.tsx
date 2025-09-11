@@ -159,7 +159,7 @@ export default function Skills() {
                       </div>
                       
                       <div className="flex flex-wrap gap-2">
-                        {skills.slice(0, showSkills[category] || 0).map((skill, skillIndex) => (
+                        {skills.slice(0, showSkills[category] || 0).map((skill) => (
                           <div
                             key={skill}
                             className="font-mono text-sm text-terminal-green bg-black/60 border border-terminal-green/40 px-3 py-1.5 rounded hover:bg-black/80 hover:border-terminal-amber/60 hover:text-terminal-amber transition-all duration-300 hover:shadow-[0_0_8px_rgba(0,255,0,0.3)] cursor-default"
