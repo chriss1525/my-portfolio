@@ -11,6 +11,23 @@ export default {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        terminal: {
+          bg: "var(--terminal-bg)",
+          green: "var(--terminal-green)",
+          amber: "var(--terminal-amber)",
+          cyan: "var(--terminal-cyan)",
+          red: "var(--terminal-red)",
+          gray: "var(--terminal-gray)",
+          white: "var(--terminal-white)",
+        },
+      },
+      fontFamily: {
+        mono: ['JetBrains Mono', 'Fira Code', 'Courier New', 'monospace'],
+      },
+      animation: {
+        'typewriter': 'typewriter 3s steps(40, end)',
+        'blink': 'blink 1s infinite',
+        'flicker': 'flicker 0.15s infinite linear',
       },
     },
   },

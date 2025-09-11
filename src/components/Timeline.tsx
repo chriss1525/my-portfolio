@@ -1,4 +1,4 @@
-"useclient";
+"use client";
 
 import { experience } from "../data/experience";
 
@@ -8,39 +8,39 @@ interface TimelineProps {
 
 export default function Timeline({ onClose }: TimelineProps) {
   return (
-    <section className="w-full px-6 md:px-16 py-16 bg-background">
-      <div className="max-w-4xl mx-auto">
+    <section className="w-full px-6 md:px-16 py-16 bg-terminal-bg">
+      <div className="max-w-4xl mx-auto terminal-window p-6">
         <div className="relative">
           <button
             onClick={onClose}
-            className="absolute right-6 top-0 text-muted-foreground hover:text-foreground transition-colors"
+            className="absolute right-6 -top-2 text-terminal-gray hover:text-terminal-amber transition-colors font-mono"
           >
-            ✕
+            ✕ close
           </button>
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-12 text-center">
-            Experience
-          </h2>
-          <div className="space-y-12">
+
+          <div className="flex items-center gap-2 mb-8">
+            <span className="text-terminal-green font-mono">$</span>
+            <span className="text-terminal-green font-mono">cat ./experience.log</span>
+          </div>
+
+          <div className="space-y-10">
             {experience.map((item, index) => (
-              <div
-                key={index}
-                className="relative pl-8 border-l-2 border-gray-800/50"
-              >
-                <div className="absolute -left-2.5 top-0 w-5 h-5 bg-gray-800/50 rounded-full" />
-                <h3 className="text-2xl md:text-3xl font-semibold text-foreground mb-4">
+              <div key={index} className="relative pl-8 border-l border-terminal-green/40">
+                <div className="absolute -left-[7px] top-0 w-3 h-3 bg-terminal-green rounded-full shadow-[0_0_8px_rgba(0,255,0,0.8)]" />
+                <h3 className="text-xl md:text-2xl font-mono text-terminal-amber mb-3">
                   {item.title}
                   <a
                     href={item.link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-muted-foreground hover:bg-gray-800/50 text-lg ml-4 transition-colors"
+                    className="ml-3 text-terminal-cyan hover:text-terminal-amber transition-colors underline underline-offset-4"
                   >
-                    Visit Platform →
+                    Visit →
                   </a>
                 </h3>
-                <div className="space-y-4">
+                <div className="space-y-2">
                   {item.description.split("\n").map((line, i) => (
-                    <p key={i} className="text-muted-foreground text-lg">
+                    <p key={i} className="text-terminal-green/90 font-mono">
                       {line}
                     </p>
                   ))}
