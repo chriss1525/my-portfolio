@@ -1,34 +1,33 @@
 export const experience = [
   {
-    title: "Backend Developer | Investa Farm",
+    title: "Fullstack Developer | Chain Academy",
+    link: "#",
+    description: `Lead development of new products from initial architecture to deployment, implementing backend services, APIs, and user interfaces.
+    
+    • Built and maintained full-stack applications, contributing to frontend, backend, and blockchain smart contract layers to meet project requirements.
+    • Design and implement responsive user interfaces, working from provided designs or independently defining UI structure.
+    • Contribute to backend architecture decisions, improving system reliability and scalability.
+    • Integrated blockchain functionality and smart contracts aligned with product architecture.
+    • Onboarded onto existing projects to debug, extend, and scale production systems effectively.`,
+  },
+  {
+    title: "Backend Smart Contract Developer | Investa Farm",
     link: "https://investafarm.com",
-    description: `Powering decentralized finance solutions for agricultural investments.
+    description: `Collaborated with clients and project teams to define project plans and scopes, ensuring alignment on objectives.
     
-    Key Contributions:
-    
-    • Developed a payment system enabling investments in USDC, USDT, and ICP using Chain Key cryptography
-    • Built a credit score tracking system to evaluate farmers' financial performance
-    • Integrated backend services with the frontend for seamless user interactions`,
+    • Developed ideas from end to end, managing architecture setup and production rollout.
+    • Refactored and optimized existing codebases to ensure scalability and maintainability of prototypes.
+    • Engaged in daily stand-ups and strategic meetings to synchronize project timelines with client objectives.
+    • Contributed across the stack, delivering high-quality, user-centric solutions within deadlines.`,
   },
   {
-    title: "Lead Developer | Carbon Crowd",
+    title: "Rust Developer | Carbon Crowd",
     link: "https://owqnd-biaaa-aaaak-qidaq-cai.icp0.io/",
-    description: `Pioneering sustainability solutions on the Internet Computer Protocol.
-
-    Key systems built:
-    • Created an SNS emissions tracking system that dynamically calculates carbon footprints by monitoring canister cycle consumption across all ICP SNSs
-    • Developed smart contracts enabling users to offset emissions directly on-chain, integrating with a verified carbon credits vendor
-    • Built a real-time dashboard that visualizes emissions data and offsetting impact for users`,
-  },
-  {
-    title: "Backend Developer | Frys Coin & Frys NFT Marketplace",
-    link: "https://frysnft.com",
-    description: `Building innovative solutions for the Frys ecosystem on the ICP blockchain.
+    description: `Developed and implemented canisters in Rust for icfootprint.io on ICP platform.
     
-    Key Contributions:
-    • Co-developed the Frys Memecoin and contributed to the creation of the project website
-    • Implemented a secure NFT marketplace with features for buying NFTs, payment processing, and wallet address tracking
-    • Ensured platform stability with robust storage solutions and user/NFT tracking systems
-    • Integrated safety measures to protect users and transactions on the platform`,
+    • Integrated backend canisters with frontend to ensure seamless data flow.
+    • Created new frontend elements to fully showcase canister capabilities.
+    • Maintained cohesive data flow between frontend, backend canisters, and InfluxDB database.
+    • Contributed to ongoing development and maintenance of backend systems using Rust.`,
   },
 ];

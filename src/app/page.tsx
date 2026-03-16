@@ -8,27 +8,40 @@ import MatrixRain from "@/components/MatrixRain";
 // import Contact from "@/components/Contact";
 
 export default function Home() {
-  const [showExperiences, setShowExperiences] = useState(false);
+  const [showExperience, setShowExperience] = useState(false);
+  const [showSkills, setShowSkills] = useState(false);
+
+  const handleShowExperience = () => {
+    setShowExperience(true);
+    // Give the DOM a tiny moment to render the section before scrolling to it
+    setTimeout(() => {
+      document.getElementById('experience')?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+  };
+
+  const handleShowSkills = () => {
+    setShowSkills(true);
+    setTimeout(() => {
+      document.getElementById('skills')?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+  };
+
+  const revealAll = () => {
+    setShowExperience(true);
+    setShowSkills(true);
+  };
 
   return (
     <main className="relative min-h-screen crt-effect">
       {/* Matrix Rain Background */}
       <MatrixRain />
       
-      <Header onOpenExperiences={() => setShowExperiences(!showExperiences)} />
-      <Hero />
+      <Header onShowExperience={handleShowExperience} onShowSkills={handleShowSkills} />
+      <Hero onSkip={revealAll} />
       
-      <div
-        className={`transition-all duration-500 ${
-          showExperiences
-            ? "opacity-100 h-auto"
-            : "opacity-0 h-0 overflow-hidden"
-        }`}
-      >
-        <Timeline onClose={() => setShowExperiences(false)} />
-      </div>
+      {showExperience && <Timeline />}
       
-      <Skills />
+      {showSkills && <Skills />}
       {/* <Contact /> */}
     </main>
   );

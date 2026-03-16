@@ -49,7 +49,7 @@ export default function Skills() {
         
         // Move to next category after current one completes
         // This will be called after skills finish loading
-        setTimeout(processNextCategory, 3000); // Give time for skills to load
+        setTimeout(processNextCategory, 400); // Give time for skills to load
       }
     };
     
@@ -63,7 +63,7 @@ export default function Skills() {
     // Step 3: Start loading skills right after
     setTimeout(() => {
       loadSkillsSequentially(category);
-    }, 200);
+    }, 50);
   };
 
   const loadSkillsSequentially = (category: string) => {
@@ -83,10 +83,10 @@ export default function Skills() {
         if (count === skills.length) {
           setTimeout(() => {
             setShowProgress(prev => ({ ...prev, [category]: false }));
-          }, 300);
+          }, 150);
         }
         
-        setTimeout(loadNextSkill, 200); // 200ms between each skill
+        setTimeout(loadNextSkill, 40); // 40ms between each skill
       }
     };
     
@@ -103,9 +103,9 @@ export default function Skills() {
               <span className="text-terminal-green font-mono">$</span>
               <Typewriter
                 text="./scan_skills.sh --verbose"
-                speed={25}
+                speed={15}
                 showCursor={false}
-                onComplete={() => setTimeout(startLoadingSequence, 300)}
+                onComplete={() => setTimeout(startLoadingSequence, 100)}
                 className="text-terminal-green"
               />
             </div>
@@ -124,10 +124,10 @@ export default function Skills() {
                       <span className="text-terminal-amber font-mono">[{categoryIndex + 1}/{categories.length}]</span>
                       <Typewriter
                         text={`Scanning ${category}/ directory...`}
-                        speed={8}
+                        speed={4}
                         showCursor={false}
                         className="text-terminal-cyan"
-                        delay={100}
+                        delay={50}
                         onComplete={() => onScanningComplete(category)}
                       />
                     </div>
@@ -184,10 +184,10 @@ export default function Skills() {
                   <span className="text-terminal-green font-mono">✅</span>
                   <Typewriter
                     text="Skill scan completed successfully! Ready for deployment."
-                    speed={20}
+                    speed={10}
                     showCursor={false}
                     className="text-terminal-green"
-                    delay={500}
+                    delay={200}
                   />
                 </div>
               </div>
