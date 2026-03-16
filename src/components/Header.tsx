@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Github, Linkedin, Mail, ChevronDown, Terminal } from "lucide-react";
+import { Github, Linkedin, Mail, Terminal } from "lucide-react";
 
 interface HeaderProps {
   onShowExperience: () => void;

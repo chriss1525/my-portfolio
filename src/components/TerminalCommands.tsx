@@ -201,7 +201,7 @@ const TerminalCommands = () => {
         );
         break;
       default:
-        output = <p className="text-terminal-red">Command not found: {cmd}. Type 'help' for available commands.</p>;
+        output = <p className="text-terminal-red">Command not found: {cmd}. Type &apos;help&apos; for available commands.</p>;
     }
 
     setHistory(prev => [...prev, { input: fullCmd, output }]);
@@ -215,7 +215,7 @@ const TerminalCommands = () => {
           {'>'} Boot sequence complete. Handing over to interactive shell...
         </p>
         <p className="text-terminal-gray text-sm mt-1">
-          {'>'} System ready. <span className="text-terminal-cyan animate-pulse">Type a command below and press Enter. (try 'help')</span>
+          {'>'} System ready. <span className="text-terminal-cyan animate-pulse">Type a command below and press Enter. (try &apos;help&apos;)</span>
         </p>
       </div>
 
