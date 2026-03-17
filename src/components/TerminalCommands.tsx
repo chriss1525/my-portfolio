@@ -32,20 +32,11 @@ const TerminalCommands = () => {
       <div key="music" className="flex flex-col">
         <span>🎵 I have a deep love for music and used to be a vocalist! 🎤</span>
         <pre className="text-terminal-amber text-xs leading-tight mt-2">
-          {`
-      _
-     / \\
-     | |
-     | |
-    /   \\
-   |  o  |
-   |     |
-    \\___/
-          `}
         </pre>
       </div>
     ),
-    "📚 I have a massive soft spot for EdTech. Given my background in education, I see myself investing in and building for the EdTech space in the future to bridge my two passions."
+    "📚 I have a massive soft spot for EdTech. Given my background in education, I see myself investing in and building for the EdTech space in the future to bridge my two passions.",
+    "A certified language and literature nerd. I'll happily lose track of time tracing linguistic roots or deep-diving into the vibrant world of African literature. If you want to talk syntax, etymology, or storytelling, I'm your person!"
   ];
 
   const experienceCount = useRef(0);
@@ -82,13 +73,18 @@ const TerminalCommands = () => {
         );
         break;
       case 'whoami':
-        output = <p className="text-terminal-cyan">chriss@blockchain-developer:~$ {whoamiResponses[whoamiCount.current % whoamiResponses.length]}</p>;
+        output = (
+          <p className="text-terminal-cyan">
+            <span className="hidden sm:inline">chriss: </span>
+            {whoamiResponses[whoamiCount.current % whoamiResponses.length]}
+          </p>
+        );
         whoamiCount.current += 1;
         break;
       case 'funfact':
         output = (
           <div className="text-terminal-cyan flex items-start gap-2">
-            <span className="shrink-0">chriss@blockchain-developer:~$</span>
+            <span className="shrink-0">chriss:</span>
             <div>{funfactResponses[funfactCount.current % funfactResponses.length]}</div>
           </div>
         );
@@ -129,6 +125,7 @@ const TerminalCommands = () => {
           <div className="text-terminal-cyan">
             <p>Email:    <a href="mailto:okothchris15@gmail.com" className="text-terminal-amber hover:underline">okothchris15@gmail.com</a></p>
             <p>GitHub:   <a href="https://github.com/chriss1525" target="_blank" rel="noreferrer" className="text-terminal-amber hover:underline">github.com/chriss1525</a></p>
+            <p>LinkedIn <a href= "linkedin.com/in/christine-okoth/" target="_blank" rel="noreferrer" className="text-terminal-amber">linkedin.com/in/christine-okoth/</a></p>
           </div>
         );
         break;

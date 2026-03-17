@@ -43,7 +43,7 @@ export default function Timeline() {
 
   return (
     <section ref={sectionRef} id="experience" className="w-full px-6 md:px-16 py-16 bg-terminal-bg">
-      <div className="max-w-4xl mx-auto terminal-window p-6 min-h-[200px]">
+      <div className="max-w-4xl mx-auto terminal-window p-4 md:p-6 min-h-[200px]">
         <div className="relative">
           <div className="mb-8">
             {showCommand && (

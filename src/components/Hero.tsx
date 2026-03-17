@@ -37,7 +37,7 @@ const Hero = ({ onSkip }: HeroProps) => {
 
   return (
     <section className="w-full min-h-screen flex items-center justify-center px-6 md:px-16 py-16 bg-terminal-bg">
-      <div className="terminal-window max-w-6xl w-full p-8 mx-auto mt-16">
+      <div className="terminal-window max-w-6xl w-full p-4 md:p-8 mx-auto mt-12 md:mt-16">
         {/* Terminal Header */}
         <div className="flex items-center gap-2 mb-6 pb-3 border-b border-terminal-green/30">
           <div className="w-3 h-3 bg-terminal-red rounded-full"></div>
@@ -49,7 +49,7 @@ const Hero = ({ onSkip }: HeroProps) => {
         {step < 6 && (
           <button 
             onClick={handleSkip} 
-            className="absolute top-6 right-6 text-terminal-gray hover:text-terminal-white text-xs font-mono border border-terminal-gray/30 px-2 py-1 rounded transition-colors z-10 bg-terminal-bg/80"
+            className="absolute top-4 md:top-6 right-4 md:right-6 text-terminal-gray hover:text-terminal-white text-[10px] md:text-xs font-mono border border-terminal-gray/30 px-2 py-1 rounded transition-colors z-10 bg-terminal-bg/80"
           >
             [Skip Animation]
           </button>
@@ -78,7 +78,7 @@ const Hero = ({ onSkip }: HeroProps) => {
           {/* 2) ASCII + Name */}
           {step >= 2 && (
             <div className="space-y-2">
-              <pre className="text-terminal-green text-xs md:text-sm font-mono leading-tight opacity-60">
+              <pre className="text-terminal-green text-[10px] sm:text-xs md:text-sm font-mono leading-tight opacity-60 overflow-x-auto scrollbar-hide">
                 {asciiArt}
               </pre>
               {skipped ? (
@@ -86,7 +86,7 @@ const Hero = ({ onSkip }: HeroProps) => {
               ) : (
                 <Typewriter
                   key="name"
-                  text="Name: Christine Okoth"
+                  text="Name: Christine Adhiambo Okoth"
                   speed={12}
                   showCursor={false}
                   className="text-terminal-green block"

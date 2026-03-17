@@ -21,17 +21,17 @@ export default function Header({ onShowExperience, onShowSkills }: HeaderProps) 
         </Link>
         
         {/* Navigation */}
-        <div className="flex space-x-6 font-mono">
+        <div className="flex space-x-4 md:space-x-6 font-mono text-sm md:text-base">
           <button onClick={onShowExperience} className="text-terminal-green hover:text-terminal-amber transition-colors">
-            <span className="text-terminal-gray">./</span>experience
+            <span className="hidden md:inline text-terminal-gray">./</span>experience
           </button>
           <button onClick={onShowSkills} className="text-terminal-green hover:text-terminal-amber transition-colors">
-            <span className="text-terminal-gray">./</span>skills
+            <span className="hidden md:inline text-terminal-gray">./</span>skills
           </button>
         </div>
 
         {/* Social Links */}
-        <div className="flex space-x-4">
+        <div className="flex space-x-3 md:space-x-4">
           <a
             href="https://github.com/chriss1525"
             target="_blank"
