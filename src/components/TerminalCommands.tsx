@@ -1,11 +1,48 @@
 "use client";
 import React, { useState, useRef, useEffect } from 'react';
 import { experience } from '../data/experience';
+import { skillsByCategory } from '../data/skills';
 
 interface CommandRecord {
   input: string;
   output: React.ReactNode;
+  dir: string;
 }
+
+const SkillScanner = () => {
+  const [visibleSkills, setVisibleSkills] = useState<string[]>([]);
+  const allSkills = useRef(Object.values(skillsByCategory).flat());
+
+  useEffect(() => {
+    let i = 0;
+    const timer = setInterval(() => {
+      if (i < allSkills.current.length) {
+        const nextSkill = allSkills.current[i];
+        setVisibleSkills(prev => [...prev, nextSkill]);
+        i++;
+      } else {
+        clearInterval(timer);
+      }
+    }, 40);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="text-terminal-green font-mono space-y-1 mt-2">
+      <p className="animate-pulse font-bold text-terminal-amber">/usr/bin/skill-scanner --recursive</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 text-xs opacity-90">
+        {visibleSkills.map((skill, idx) => (
+          <p key={idx}><span className="text-terminal-amber mr-2">[OK]</span>{skill.padEnd(20, '.')}</p>
+        ))}
+      </div>
+      {visibleSkills.length === allSkills.current.length && (
+        <p className="text-terminal-white mt-2 border-t border-terminal-green/30 pt-2">
+          Verification complete. All modules operational.
+        </p>
+      )}
+    </div>
+  );
+};
 
 const TerminalCommands = () => {
   const [history, setHistory] = useState<CommandRecord[]>([]);
@@ -13,6 +50,7 @@ const TerminalCommands = () => {
   const [currentInput, setCurrentInput] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const endOfTerminalRef = useRef<HTMLDivElement>(null);
+  const [currentDir, setCurrentDir] = useState('~');
   
   // State to cycle through whoami responses
   const whoamiCount = useRef(0);
@@ -36,7 +74,8 @@ const TerminalCommands = () => {
       </div>
     ),
     "📚 I have a massive soft spot for EdTech. Given my background in education, I see myself investing in and building for the EdTech space in the future to bridge my two passions.",
-    "A certified language and literature nerd. I'll happily lose track of time tracing linguistic roots or deep-diving into the vibrant world of African literature. If you want to talk syntax, etymology, or storytelling, I'm your person!"
+    "A certified language and literature nerd. I'll happily lose track of time tracing linguistic roots or deep-diving into the vibrant world of African literature. If you want to talk syntax, etymology, or storytelling, I'm your person!",
+    "Writing is my second language. When I'm not coding, I'm likely drafting a Web3 tutorial or pouring my heart into a Substack piece. I find that clear writing leads to clear code."
   ];
 
   const experienceCount = useRef(0);
@@ -49,10 +88,14 @@ const TerminalCommands = () => {
 
   const handleCommandSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const fullCmd = currentInput.trim();
-    if (!fullCmd) return;
-    const cmd = fullCmd.toLowerCase().split(' ')[0];
+    const trimmedInput = currentInput.trim();
+    if (!trimmedInput) return;
+    
+    const parts = trimmedInput.split(/\s+/);
+    const cmd = parts[0].toLowerCase();
+    const args = parts.slice(1);
 
+    const promptLabel = `okoth@chriss:${currentDir}$`;
     let output: React.ReactNode = '';
 
     switch (cmd) {
@@ -65,6 +108,7 @@ const TerminalCommands = () => {
             <p>  <span className="text-terminal-amber">skills</span>       - List core technologies</p>
             <p>  <span className="text-terminal-amber">funfact</span>      - Discover random things about me</p>
             <p>  <span className="text-terminal-amber">contact</span>      - Show contact information</p>
+            <p>  <span className="text-terminal-amber">blogs</span>        - Read my technical and personal writing</p>
             <p>  <span className="text-terminal-amber">download</span>     - Securely download my CV</p>
             <p>  <span className="text-terminal-amber">theme</span>        - Change the terminal color scheme</p>
             <p>  <span className="text-terminal-amber">coffee</span>       - Brew a cup of coffee</p>
@@ -75,7 +119,7 @@ const TerminalCommands = () => {
       case 'whoami':
         output = (
           <p className="text-terminal-cyan">
-            <span className="hidden sm:inline">okoth@chriss:~$ </span>
+            <span className="hidden sm:inline">{promptLabel} </span>
             {whoamiResponses[whoamiCount.current % whoamiResponses.length]}
           </p>
         );
@@ -84,7 +128,7 @@ const TerminalCommands = () => {
       case 'funfact':
         output = (
           <div className="text-terminal-cyan flex items-start gap-2">
-            <span className="shrink-0">okoth@chriss:~$</span>
+            <span className="shrink-0">{promptLabel}</span>
             <div>{funfactResponses[funfactCount.current % funfactResponses.length]}</div>
           </div>
         );
@@ -129,6 +173,16 @@ const TerminalCommands = () => {
           </div>
         );
         break;
+      case 'blogs':
+        output = (
+          <div className="text-terminal-cyan space-y-2">
+            <p>I use words to build just as much as I use code. You can find my work here:</p>
+            <p><span className="text-terminal-amber">Medium:</span> <a href="https://medium.com/@okothchris15" target="_blank" rel="noreferrer" className="underline">Technical Deep-dives & Web3 Tutorials</a></p>
+            <p><span className="text-terminal-amber">Substack:</span> <a href="https://amadwoman.substack.com/" target="_blank" rel="noreferrer" className="underline">&quot;Musings of a Mad Woman&quot; - Heartfelt pieces & random thoughts</a></p>
+            <p className="text-xs text-terminal-gray italic">Warning: The Substack contains high levels of honesty and zero semicolons.</p>
+          </div>
+        );
+        break;
       case 'clear':
         setHistory([]);
         setCurrentInput('');
@@ -137,17 +191,145 @@ const TerminalCommands = () => {
         output = <p className="text-terminal-red">chriss is not in the sudoers file. This incident will be reported.</p>;
         break;
       case 'rm':
-        output = <p className="text-terminal-red">Nice try. I kind of need those files to get hired.</p>;
+        if (args.length === 0) {
+          output = <p className="text-terminal-red">rm: missing operand</p>;
+        } else {
+          const target = args[0].toLowerCase();
+          if (target === 'experience.log') {
+            output = <p className="text-terminal-red">rm: cannot remove &apos;experience.log&apos;: Deleting my past won&apos;t give me a future with you. Permission denied.</p>;
+          } else if (target === 'christine_okoth.pdf') {
+            output = <p className="text-terminal-red">rm: cannot remove &apos;christine_okoth.pdf&apos;: File is currently being read by a potential employer. Try again after I&apos;m hired!</p>;
+          } else if (target === 'scan_skills.sh') {
+            output = <p className="text-terminal-red">rm: cannot remove &apos;scan_skills.sh&apos;: Self-preservation protocol active. This script is too pretty to die.</p>;
+          } else if (target.includes('blockchain') || target.includes('backend') || target.includes('frontend')) {
+            output = <p className="text-terminal-red">rm: {target}: You&apos;re trying to delete my actual value. My brain says no.</p>;
+          } else if (target === 'skills' || target === 'skills/') {
+            output = <p className="text-terminal-red">rm: cannot remove &apos;skills/&apos;: Is a directory. Use rmdir (but please don&apos;t).</p>;
+          } else {
+            output = <p className="text-terminal-red">rm: cannot remove &apos;{target}&apos;: No such file or directory. Are you trying to delete my hopes and dreams?</p>;
+          }
+        }
+        break;
+      case 'rmdir':
+        if (args.length === 0) {
+          output = <p className="text-terminal-red">rmdir: missing operand</p>;
+        } else {
+          const target = args[0].toLowerCase().replace(/\/$/, '');
+          if (target === 'skills') {
+            output = (
+              <div className="text-terminal-red space-y-1">
+                <p>rmdir: failed to remove &apos;skills/&apos;: Directory not empty.</p>
+                <p className="text-xs italic opacity-70">Also, why would you want to delete my talent? 😢</p>
+              </div>
+            );
+          } else {
+            output = <p className="text-terminal-red">rmdir: failed to remove &apos;{target}&apos;: No such directory.</p>;
+          }
+        }
+        break;
+      case 'cd':
+        const dest = args[0]?.replace(/\/$/, '');
+        if (dest === '..') {
+          if (currentDir === '~/skills') {
+            setCurrentDir('~');
+          } else {
+            // Already at home or root, just keep it at ~
+            setCurrentDir('~');
+          }
+        } else if (!dest || dest === '~') {
+          setCurrentDir('~');
+        } else if (dest === 'skills' && currentDir === '~') {
+          setCurrentDir('~/skills');
+        } else {
+          output = <p className="text-terminal-red">cd: {dest}: No such file or directory</p>;
+        }
+        break;
+      case 'pwd':
+        output = <p className="text-terminal-cyan">/home/okoth/chriss{currentDir === '~' ? '' : '/skills'}</p>;
         break;
       case 'ls':
-        output = (
-          <div className="text-terminal-cyan flex flex-wrap gap-4">
-            <span>experience.log</span>
-            <span className="text-terminal-amber">skills/</span>
-            <span>CHRISTINE_OKOTH.pdf</span>
-            <span className="text-terminal-green">scan_skills.sh</span>
-          </div>
-        );
+        const lsTarget = args[0]?.replace(/\/$/, '').toLowerCase();
+        if (lsTarget === 'skills' || (currentDir === '~/skills' && !lsTarget)) {
+          output = (
+            <div className="text-terminal-cyan flex flex-wrap gap-4">
+              <span>blockchain.sol</span>
+              <span>backend.ts</span>
+              <span>frontend.tsx</span>
+            </div>
+          );
+        } else if (!lsTarget && currentDir === '~') {
+          output = (
+            <div className="text-terminal-cyan flex flex-wrap gap-4">
+              <span>experience.log</span>
+              <span className="text-terminal-amber">skills/</span>
+              <span>CHRISTINE_OKOTH.pdf</span>
+              <span className="text-terminal-green">scan_skills.sh</span>
+            </div>
+          );
+        } else {
+          output = <p className="text-terminal-red">ls: cannot access &apos;{args[0]}&apos;: No such file or directory</p>;
+        }
+        break;
+      case 'cat':
+        if (args.length === 0) {
+          output = <p className="text-terminal-red">Usage: cat [file]</p>;
+        } else {
+          const target = args[0].toLowerCase();
+          const fileName = target.split('/').pop() || '';
+          // Strip potential extensions for skill lookups
+          const skillKey = fileName.replace(/\.(sol|ts|tsx|js|rs|md)$/, '');
+
+          if (target === 'experience.log' || (target === 'experience' && currentDir === '~')) {
+            output = (
+              <div className="space-y-6 text-terminal-cyan mt-2 border-l border-terminal-green/20 pl-4">
+                {experience.map((exp, i) => (
+                  <div key={i}>
+                    <p className="text-terminal-amber font-bold underline">{exp.title}</p>
+                    <p className="text-xs opacity-70 mb-1">{exp.link !== "#" ? exp.link : ""}</p>
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed">{exp.description}</p>
+                  </div>
+                ))}
+              </div>
+            );
+          } else if (target === 'christine_okoth.pdf') {
+            output = (
+              <div className="text-terminal-cyan mt-2 border-l border-terminal-amber/30 pl-4 space-y-2">
+                <p className="text-terminal-amber font-bold underline">[PDF CONTENT PREVIEW: CHRISTINE_OKOTH.pdf]</p>
+                <p><span className="text-terminal-amber">Role:</span> Fullstack Software Engineer | Web3 Developer | Educator</p>
+                <p><span className="text-terminal-amber">Summary:</span> Experienced engineer specialized in system architecture and blockchain integration. Passionate about building robust software that solves real-world problems and educating the next generation of Web3 developers.</p>
+                <p><span className="text-terminal-amber">Contact:</span> okothchris15@gmail.com | github.com/chriss1525</p>
+                <p className="text-xs opacity-50 italic mt-2">To get the full document, use the &apos;download&apos; command.</p>
+              </div>
+            );
+          } else if (target === 'scan_skills.sh') {
+            output = (
+              <div className="text-terminal-green font-mono text-xs opacity-80">
+                <p>#!/bin/bash</p>
+                <p>echo &quot;Initializing skill verification...&quot;</p>
+                <p># Recursive scan of all skill directories</p>
+                <p>find ./skills -type f -exec cat {} \;</p>
+              </div>
+            );
+          } else if (skillsByCategory[skillKey as keyof typeof skillsByCategory]) {
+            const skills = skillsByCategory[skillKey as keyof typeof skillsByCategory];
+            output = (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {skills.map((skill: string) => (
+                  <span key={skill} className="text-terminal-green border border-terminal-green/30 px-2 py-0.5 rounded text-xs">
+                    ✓ {skill}
+                  </span>
+                ))}
+              </div>
+            );
+          } else if (target.includes('skill')) {
+            output = <p className="text-terminal-red">cat: {args[0]}: Is a directory</p>;
+          } else {
+            output = <p className="text-terminal-red">cat: {args[0]}: No such file or directory</p>;
+          }
+        }
+        break;
+      case './scan_skills.sh':
+        output = <SkillScanner />;
         break;
       case 'download':
         output = (
@@ -201,7 +383,7 @@ const TerminalCommands = () => {
         output = <p className="text-terminal-red">Command not found: {cmd}. Type &apos;help&apos; for available commands.</p>;
     }
 
-    setHistory(prev => [...prev, { input: fullCmd, output }]);
+    setHistory(prev => [...prev, { input: trimmedInput, output, dir: currentDir }]);
     setCurrentInput('');
   };
 
@@ -220,7 +402,7 @@ const TerminalCommands = () => {
           {history.map((record, index) => (
             <div key={index} className="space-y-1">
               <div className="flex items-center text-terminal-green">
-                <span className="mr-2">okoth@chriss:~$</span>
+                <span className="mr-2">okoth@chriss:{record.dir}$</span>
                 <span>{record.input}</span>
               </div>
               <div className="ml-4">
@@ -230,7 +412,7 @@ const TerminalCommands = () => {
           ))}
 
           <form onSubmit={handleCommandSubmit} className="flex items-center text-terminal-green mt-4">
-            <span className="mr-2">okoth@chriss:~$</span>
+            <span className="mr-2">okoth@chriss:{currentDir}$</span>
             <input
               ref={inputRef}
               type="text"
