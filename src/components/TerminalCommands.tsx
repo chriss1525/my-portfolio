@@ -75,7 +75,7 @@ const TerminalCommands = () => {
       case 'whoami':
         output = (
           <p className="text-terminal-cyan">
-            <span className="hidden sm:inline">chriss: </span>
+            <span className="hidden sm:inline">okoth@chriss:~$ </span>
             {whoamiResponses[whoamiCount.current % whoamiResponses.length]}
           </p>
         );
@@ -84,7 +84,7 @@ const TerminalCommands = () => {
       case 'funfact':
         output = (
           <div className="text-terminal-cyan flex items-start gap-2">
-            <span className="shrink-0">chriss:</span>
+            <span className="shrink-0">okoth@chriss:~$</span>
             <div>{funfactResponses[funfactCount.current % funfactResponses.length]}</div>
           </div>
         );
@@ -220,7 +220,7 @@ const TerminalCommands = () => {
           {history.map((record, index) => (
             <div key={index} className="space-y-1">
               <div className="flex items-center text-terminal-green">
-                <span className="mr-2">~/chriss $</span>
+                <span className="mr-2">okoth@chriss:~$</span>
                 <span>{record.input}</span>
               </div>
               <div className="ml-4">
@@ -230,7 +230,7 @@ const TerminalCommands = () => {
           ))}
 
           <form onSubmit={handleCommandSubmit} className="flex items-center text-terminal-green mt-4">
-            <span className="mr-2">~/chriss $</span>
+            <span className="mr-2">okoth@chriss:~$</span>
             <input
               ref={inputRef}
               type="text"
