@@ -1,33 +1,57 @@
-export const experience = [
+export interface Role {
+  title: string;
+  company: string;
+  start: string;
+  end: string;
+  link?: string;
+  points: string[];
+}
+
+export const experience: Role[] = [
   {
-    title: "Fullstack Developer | Chain Academy",
-    link: "#",
-    description: `Lead development of new products from initial architecture to deployment, implementing backend services, APIs, and user interfaces.
-    
-    • Built and maintained full-stack applications, contributing to frontend, backend, and blockchain smart contract layers to meet project requirements.
-    • Design and implement responsive user interfaces, working from provided designs or independently defining UI structure.
-    • Contribute to backend architecture decisions, improving system reliability and scalability.
-    • Integrated blockchain functionality and smart contracts aligned with product architecture.
-    • Onboarded onto existing projects to debug, extend, and scale production systems effectively.`,
+    title: "Software Engineer",
+    company: "Robin",
+    start: "05/2026",
+    end: "now",
+    link: "https://withrobin.ai",
+    points: [
+      "Build across Robin's server, web app and AI pipeline: the API, the agent that turns conversations into notes and wikis, and the MCP tools AI clients use.",
+      "Work on the permissions model and database migrations for a single-tenant product where every organisation runs its own instance.",
+      "Ship through a weekly release train, from pull request and review to canary and production.",
+    ],
   },
   {
-    title: "Backend Smart Contract Developer | Investa Farm",
+    title: "Fullstack Developer",
+    company: "Chain Academy",
+    start: "05/2025",
+    end: "08/2026",
+    points: [
+      "Led new products from first architecture to deployment: backend services, APIs and user interfaces.",
+      "Built across the frontend, backend and smart contract layers of client projects, including Aeli Health and New Skin.",
+      "Joined existing production systems to debug, extend and scale them.",
+    ],
+  },
+  {
+    title: "Backend Smart Contract Developer",
+    company: "Investa Farm",
+    start: "07/2024",
+    end: "12/2024",
     link: "https://investafarm.com",
-    description: `Collaborated with clients and project teams to define project plans and scopes, ensuring alignment on objectives.
-    
-    • Developed ideas from end to end, managing architecture setup and production rollout.
-    • Refactored and optimized existing codebases to ensure scalability and maintainability of prototypes.
-    • Engaged in daily stand-ups and strategic meetings to synchronize project timelines with client objectives.
-    • Contributed across the stack, delivering high-quality, user-centric solutions within deadlines.`,
+    points: [
+      "Took ideas from scope to production rollout, including the architecture.",
+      "Refactored prototype codebases so they could scale and be maintained.",
+      "Worked with clients and the team to plan scope and keep delivery on schedule.",
+    ],
   },
   {
-    title: "Rust Developer | Carbon Crowd",
+    title: "Rust Developer",
+    company: "Carbon Crowd",
+    start: "03/2024",
+    end: "08/2024",
     link: "https://owqnd-biaaa-aaaak-qidaq-cai.icp0.io/",
-    description: `Developed and implemented canisters in Rust for icfootprint.io on ICP platform.
-    
-    • Integrated backend canisters with frontend to ensure seamless data flow.
-    • Created new frontend elements to fully showcase canister capabilities.
-    • Maintained cohesive data flow between frontend, backend canisters, and InfluxDB database.
-    • Contributed to ongoing development and maintenance of backend systems using Rust.`,
+    points: [
+      "Wrote Rust canisters for icfootprint.io on the Internet Computer.",
+      "Connected the canisters to the frontend and an InfluxDB store, and built the UI to show what they do.",
+    ],
   },
 ];

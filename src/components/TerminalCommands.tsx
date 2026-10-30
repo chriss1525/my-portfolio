@@ -1,434 +1,433 @@
 "use client";
-import React, { useState, useRef, useEffect } from 'react';
-import { experience } from '../data/experience';
-import { skillsByCategory } from '../data/skills';
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { profile } from "@/data/profile";
+import { experience } from "@/data/experience";
+import { allProjects, clientWork, projects } from "@/data/projects";
+import { skillsByCategory } from "@/data/skills";
+import { currentPalette, palettes, setPalette, setTheme, type Palette } from "@/lib/prefs";
 
-interface CommandRecord {
+const OPEN_EVENT = "shell:open";
+export const openShell = () => window.dispatchEvent(new Event(OPEN_EVENT));
+
+const sections = ["now", "projects", "experience", "skills", "writing", "contact"];
+const homeFiles = ["now.md", "projects/", "experience.log", "skills/", "writing.md", "CHRISTINE_OKOTH.pdf", "scan_skills.sh"];
+const commands = [
+  "help", "whoami", "man", "ls", "cd", "pwd", "cat", "open", "projects", "experience", "skills", "writing",
+  "contact", "download", "theme", "mode", "funfact", "coffee", "history", "echo", "clear", "exit",
+];
+const whoami = [
+  "Fullstack engineer: backend systems, AI knowledge tools and smart contracts.",
+  "Rust, TypeScript and Solidity, with a soft spot for Postgres.",
+  "A teacher at heart: the web, how software gets built, and Web3 once you're ready.",
+  "A critical thinker with a soft spot for crossing tech with real-world use.",
+];
+const slugs = allProjects.map((p) => p.slug);
+
+interface Line {
   input: string;
-  output: React.ReactNode;
   dir: string;
+  output: React.ReactNode;
 }
 
-const SkillScanner = () => {
-  const [visibleSkills, setVisibleSkills] = useState<string[]>([]);
-  const allSkills = useRef(Object.values(skillsByCategory).flat());
+const C = {
+  ok: "text-fg",
+  info: "text-second",
+  dim: "text-dim",
+  err: "text-danger",
+  hi: "text-accent",
+};
 
-  useEffect(() => {
-    let i = 0;
-    const timer = setInterval(() => {
-      if (i < allSkills.current.length) {
-        const nextSkill = allSkills.current[i];
-        setVisibleSkills(prev => [...prev, nextSkill]);
-        i++;
-      } else {
-        clearInterval(timer);
-      }
-    }, 40);
-    return () => clearInterval(timer);
-  }, []);
+function dirOf(cwd: string, arg?: string) {
+  const a = arg?.replace(/\/$/, "");
+  if (!a || a === "~") return "~";
+  if (a === "..") return cwd === "~" ? "~" : cwd.split("/").slice(0, -1).join("/") || "~";
+  const target = a.startsWith("~/") ? a : cwd === "~" ? `~/${a}` : `${cwd}/${a}`;
+  if (target === "~/projects" || target === "~/skills") return target;
+  if (target.startsWith("~/projects/") && slugs.includes(target.slice(11))) return target;
+  return null;
+}
 
+function listing(dir: string): string[] {
+  if (dir === "~") return homeFiles;
+  if (dir === "~/projects") return slugs.map((s) => `${s}/`);
+  if (dir === "~/skills") return Object.keys(skillsByCategory).map((c) => `${c}.txt`);
+  if (dir.startsWith("~/projects/")) return ["README.md"];
+  return [];
+}
+
+function scrollTo(id: string) {
+  document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function ProjectCard({ slug }: { slug: string }) {
+  const p = allProjects.find((x) => x.slug === slug)!;
   return (
-    <div className="text-terminal-green font-mono space-y-1 mt-2">
-      <p className="animate-pulse font-bold text-terminal-amber">/usr/bin/skill-scanner --recursive</p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 text-xs opacity-90">
-        {visibleSkills.map((skill, idx) => (
-          <p key={idx}><span className="text-terminal-amber mr-2">[OK]</span>{skill.padEnd(20, '.')}</p>
-        ))}
-      </div>
-      {visibleSkills.length === allSkills.current.length && (
-        <p className="text-terminal-white mt-2 border-t border-terminal-green/30 pt-2">
-          Verification complete. All modules operational.
+    <div className="space-y-1">
+      <p className={C.hi}>{p.name} <span className={C.dim}>· {p.year}{p.client ? " · client work" : ""}</span></p>
+      <p>{p.summary}</p>
+      {p.role && <p className={C.info}>{p.role}</p>}
+      <p className={C.dim}>{p.stack.join(" · ")}</p>
+      {(p.repo || p.live) && (
+        <p className="flex gap-4">
+          {p.live && <a href={p.live} target="_blank" rel="noreferrer" className={`${C.info} underline`}>[live]</a>}
+          {p.repo && <a href={p.repo} target="_blank" rel="noreferrer" className={`${C.info} underline`}>[code]</a>}
         </p>
       )}
     </div>
   );
-};
+}
 
-const TerminalCommands = () => {
-  const [history, setHistory] = useState<CommandRecord[]>([]);
-
-  const [currentInput, setCurrentInput] = useState('');
-  const inputRef = useRef<HTMLInputElement>(null);
-  const endOfTerminalRef = useRef<HTMLDivElement>(null);
-  const [currentDir, setCurrentDir] = useState('~');
-  
-  // State to cycle through whoami responses
-  const whoamiCount = useRef(0);
-  const whoamiResponses = [
-    "Dynamic Fullstack Developer excelling in system architecture and blockchain integration.",
-    "Expert in Rust, Typescript, and smart contracts, delivering innovative, user-centric solutions.",
-    "A Web3 teacher passionate about introducing newbies into the expansive world of blockchain.",
-    "A critical thinker driving project success, with a soft spot for crossing Web3 with real-world utility."
-  ];
-
-  // State to cycle through fun facts
-  const funfactCount = useRef(0);
-  const funfactResponses: React.ReactNode[] = [
-    "I studied Education with the intent to become a Language & Literature teacher.",
-    "I started my tech journey in instructional design, laid my dev foundations at ALX, and somehow found myself building backend systems as a self-taught dev!",
-    (
-      <div key="music" className="flex flex-col">
-        <span>🎵 I have a deep love for music and used to be a vocalist! 🎤</span>
-        <pre className="text-terminal-amber text-xs leading-tight mt-2">
-        </pre>
+const ExperienceLog = () => (
+  <div className="space-y-3">
+    {experience.map((r) => (
+      <div key={r.company}>
+        <p><span className={C.info}>{r.start} → {r.end}</span> <span className={C.hi}>{r.title} @ {r.company}</span></p>
+        {r.points.map((pt) => <p key={pt} className={`${C.dim} pl-4`}>› {pt}</p>)}
       </div>
-    ),
-    "📚 I have a massive soft spot for EdTech. Given my background in education, I see myself investing in and building for the EdTech space in the future to bridge my two passions.",
-    "A certified language and literature nerd. I'll happily lose track of time tracing linguistic roots or deep-diving into the vibrant world of African literature. If you want to talk syntax, etymology, or storytelling, I'm your person!",
-    "Writing is my second language. When I'm not coding, I'm likely drafting a Web3 tutorial or pouring my heart into a Substack piece. I find that clear writing leads to clear code."
-  ];
+    ))}
+  </div>
+);
 
-  const experienceCount = useRef(0);
-  const themeCount = useRef(1); // Start at 1 to immediately change from default Neon Green
+const WritingLinks = () => (
+  <div className="space-y-1">
+    <p><span className={C.info}>Medium:</span> <a href={profile.links.medium} target="_blank" rel="noreferrer" className="underline">technical deep dives &amp; Web3 tutorials</a></p>
+    <p><span className={C.info}>Substack:</span> <a href={profile.links.substack} target="_blank" rel="noreferrer" className="underline">Musings of a Mad Woman</a></p>
+    <p className={`${C.dim} text-xs italic`}>Warning: the Substack contains high levels of honesty and zero semicolons.</p>
+  </div>
+);
 
-  // Auto-scroll to bottom when new command is entered
+export default function TerminalCommands() {
+  const [open, setOpen] = useState(false);
+  const [lines, setLines] = useState<Line[]>([]);
+  const [input, setInput] = useState("");
+  const [cwd, setCwd] = useState("~");
+  const [past, setPast] = useState<string[]>([]);
+  const [cursor, setCursor] = useState<number | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const endRef = useRef<HTMLDivElement>(null);
+  const counters = useRef({ whoami: 0, funfact: 0 });
+
   useEffect(() => {
-    endOfTerminalRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }, [history]);
+    const onOpen = () => setOpen(true);
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setOpen((o) => !o);
+      }
+    };
+    window.addEventListener(OPEN_EVENT, onOpen);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener(OPEN_EVENT, onOpen);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, []);
 
-  const handleCommandSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmedInput = currentInput.trim();
-    if (!trimmedInput) return;
-    
-    const parts = trimmedInput.split(/\s+/);
-    const cmd = parts[0].toLowerCase();
-    const args = parts.slice(1);
+  useEffect(() => {
+    if (open) inputRef.current?.focus();
+  }, [open]);
+  useEffect(() => endRef.current?.scrollIntoView({ block: "nearest" }), [lines]);
 
-    const promptLabel = `okoth@chriss:${currentDir}$`;
-    let output: React.ReactNode = '';
+  const run = useCallback(
+    (raw: string): React.ReactNode | null => {
+      const [cmdRaw, ...args] = raw.split(/\s+/);
+      const cmd = cmdRaw.toLowerCase();
+      const arg = args[0]?.toLowerCase();
 
-    switch (cmd) {
-      case 'help':
-        output = (
-          <div className="text-terminal-cyan space-y-1">
-            <p>Available commands:</p>
-            <p>  <span className="text-terminal-amber">whoami</span>       - Display summary (try multiple times!)</p>
-            <p>  <span className="text-terminal-amber">experience</span>   - View my work history (try multiple times!)</p>
-            <p>  <span className="text-terminal-amber">skills</span>       - List core technologies</p>
-            <p>  <span className="text-terminal-amber">funfact</span>      - Discover random things about me</p>
-            <p>  <span className="text-terminal-amber">contact</span>      - Show contact information</p>
-            <p>  <span className="text-terminal-amber">blogs</span>        - Read my technical and personal writing</p>
-            <p>  <span className="text-terminal-amber">download</span>     - Securely download my CV</p>
-            <p>  <span className="text-terminal-amber">theme</span>        - Change the terminal color scheme</p>
-            <p>  <span className="text-terminal-amber">coffee</span>       - Brew a cup of coffee</p>
-            <p>  <span className="text-terminal-amber">clear</span>        - Clear terminal output</p>
-          </div>
-        );
-        break;
-      case 'whoami':
-        output = (
-          <p className="text-terminal-cyan">
-            <span className="hidden sm:inline">{promptLabel} </span>
-            {whoamiResponses[whoamiCount.current % whoamiResponses.length]}
-          </p>
-        );
-        whoamiCount.current += 1;
-        break;
-      case 'funfact':
-        output = (
-          <div className="text-terminal-cyan flex items-start gap-2">
-            <span className="shrink-0">{promptLabel}</span>
-            <div>{funfactResponses[funfactCount.current % funfactResponses.length]}</div>
-          </div>
-        );
-        funfactCount.current += 1;
-        break;
-      case 'experience':
-        const currentExp = experience[experienceCount.current % experience.length];
-        output = (
-          <div className="text-terminal-cyan mb-2">
-            <p className="text-terminal-amber">{currentExp.title}</p>
-            {currentExp.link !== "#" && (
-              <p>
-                <a href={currentExp.link} target="_blank" rel="noreferrer" className="text-terminal-cyan hover:text-terminal-white hover:underline">
-                  [Visit Project]
-                </a>
-              </p>
-            )}
-            <div className="space-y-1 mt-2 text-terminal-gray">
-              {currentExp.description.split("\n").map((line, i) => (
-                <p key={i}>{line}</p>
+      switch (cmd) {
+        case "help":
+          return (
+            <div className="space-y-0.5">
+              <p className={C.info}>Commands (Tab completes, ↑↓ for history, Esc closes):</p>
+              {[
+                ["whoami", "a one-line summary (try it again)"],
+                ["man chriss", "the longer story"],
+                ["ls / cd / cat / pwd", "look around: try cat now.md"],
+                ["open <name>", "jump to a section or project, e.g. open robin"],
+                ["projects, experience, skills, writing", "print a section here"],
+                ["contact, download", "get in touch or grab the CV"],
+                ["theme [violet|amber|ice|green]", "change the colours"],
+                ["mode [light|dark]", "switch light and dark"],
+                ["funfact, coffee", "for fun"],
+                ["clear, exit", ""],
+              ].map(([c, d]) => (
+                <p key={c}><span className={`${C.hi} inline-block w-64 max-w-[55%] align-top`}>{c}</span><span className={C.dim}>{d}</span></p>
               ))}
             </div>
-          </div>
-        );
-        experienceCount.current += 1;
-        break;
-      case 'skills':
-        output = (
-          <div className="text-terminal-cyan">
-            <p>drwxr-xr-x  blockchain/  (Rust, Solidity, ICP, EVM L2s)</p>
-            <p>drwxr-xr-x  backend/     (Node.js, Microservices, APIs, DBs)</p>
-            <p>drwxr-xr-x  frontend/    (TypeScript, React, Next.js)</p>
-          </div>
-        );
-        break;
-      case 'contact':
-        output = (
-          <div className="text-terminal-cyan">
-            <p>Email:    <a href="mailto:okothchris15@gmail.com" className="text-terminal-amber hover:underline">okothchris15@gmail.com</a></p>
-            <p>GitHub:   <a href="https://github.com/chriss1525" target="_blank" rel="noreferrer" className="text-terminal-amber hover:underline">github.com/chriss1525</a></p>
-            <p>LinkedIn <a href= "linkedin.com/in/christine-okoth/" target="_blank" rel="noreferrer" className="text-terminal-amber">linkedin.com/in/christine-okoth/</a></p>
-          </div>
-        );
-        break;
-      case 'blogs':
-        output = (
-          <div className="text-terminal-cyan space-y-2">
-            <p>I use words to build just as much as I use code. You can find my work here:</p>
-            <p><span className="text-terminal-amber">Medium:</span> <a href="https://medium.com/@okothchris15" target="_blank" rel="noreferrer" className="underline">Technical Deep-dives & Web3 Tutorials</a></p>
-            <p><span className="text-terminal-amber">Substack:</span> <a href="https://amadwoman.substack.com/" target="_blank" rel="noreferrer" className="underline">&quot;Musings of a Mad Woman&quot; - Heartfelt pieces & random thoughts</a></p>
-            <p className="text-xs text-terminal-gray italic">Warning: The Substack contains high levels of honesty and zero semicolons.</p>
-          </div>
-        );
-        break;
-      case 'clear':
-        setHistory([]);
-        setCurrentInput('');
-        return;
-      case 'sudo':
-        output = <p className="text-terminal-red">chriss is not in the sudoers file. This incident will be reported.</p>;
-        break;
-      case 'rm':
-        if (args.length === 0) {
-          output = <p className="text-terminal-red">rm: missing operand</p>;
-        } else {
-          const target = args[0].toLowerCase();
-          if (target === 'experience.log') {
-            output = <p className="text-terminal-red">rm: cannot remove &apos;experience.log&apos;: Deleting my past won&apos;t give me a future with you. Permission denied.</p>;
-          } else if (target === 'christine_okoth.pdf') {
-            output = <p className="text-terminal-red">rm: cannot remove &apos;christine_okoth.pdf&apos;: File is currently being read by a potential employer. Try again after I&apos;m hired!</p>;
-          } else if (target === 'scan_skills.sh') {
-            output = <p className="text-terminal-red">rm: cannot remove &apos;scan_skills.sh&apos;: Self-preservation protocol active. This script is too pretty to die.</p>;
-          } else if (target.includes('blockchain') || target.includes('backend') || target.includes('frontend')) {
-            output = <p className="text-terminal-red">rm: {target}: You&apos;re trying to delete my actual value. My brain says no.</p>;
-          } else if (target === 'skills' || target === 'skills/') {
-            output = <p className="text-terminal-red">rm: cannot remove &apos;skills/&apos;: Is a directory. Use rmdir (but please don&apos;t).</p>;
-          } else {
-            output = <p className="text-terminal-red">rm: cannot remove &apos;{target}&apos;: No such file or directory. Are you trying to delete my hopes and dreams?</p>;
-          }
-        }
-        break;
-      case 'rmdir':
-        if (args.length === 0) {
-          output = <p className="text-terminal-red">rmdir: missing operand</p>;
-        } else {
-          const target = args[0].toLowerCase().replace(/\/$/, '');
-          if (target === 'skills') {
-            output = (
-              <div className="text-terminal-red space-y-1">
-                <p>rmdir: failed to remove &apos;skills/&apos;: Directory not empty.</p>
-                <p className="text-xs italic opacity-70">Also, why would you want to delete my talent? 😢</p>
-              </div>
-            );
-          } else {
-            output = <p className="text-terminal-red">rmdir: failed to remove &apos;{target}&apos;: No such directory.</p>;
-          }
-        }
-        break;
-      case 'cd':
-        const dest = args[0]?.replace(/\/$/, '');
-        if (dest === '..') {
-          if (currentDir === '~/skills') {
-            setCurrentDir('~');
-          } else {
-            // Already at home or root, just keep it at ~
-            setCurrentDir('~');
-          }
-        } else if (!dest || dest === '~') {
-          setCurrentDir('~');
-        } else if (dest === 'skills' && currentDir === '~') {
-          setCurrentDir('~/skills');
-        } else {
-          output = <p className="text-terminal-red">cd: {dest}: No such file or directory</p>;
-        }
-        break;
-      case 'pwd':
-        output = <p className="text-terminal-cyan">/home/okoth/chriss{currentDir === '~' ? '' : '/skills'}</p>;
-        break;
-      case 'ls':
-        const lsTarget = args[0]?.replace(/\/$/, '').toLowerCase();
-        if (lsTarget === 'skills' || (currentDir === '~/skills' && !lsTarget)) {
-          output = (
-            <div className="text-terminal-cyan flex flex-wrap gap-4">
-              <span>blockchain.sol</span>
-              <span>backend.ts</span>
-              <span>frontend.tsx</span>
+          );
+        case "whoami":
+          return <p>{whoami[counters.current.whoami++ % whoami.length]}</p>;
+        case "man":
+          if (arg !== "chriss" && arg !== "christine") return <p className={C.err}>No manual entry for {args[0] ?? "nothing"}. Try: man chriss</p>;
+          return (
+            <div className="space-y-2">
+              <p className={C.hi}>CHRISS(1)</p>
+              <p><span className={C.info}>NAME</span><br />&nbsp;&nbsp;{profile.fullName}: {profile.title.toLowerCase()}, teacher, writer</p>
+              <p><span className={C.info}>SYNOPSIS</span><br />&nbsp;&nbsp;chriss [--backend] [--ai] [--web3] [--teach]</p>
+              <div><span className={C.info}>DESCRIPTION</span>{profile.story.map((s) => <p key={s} className="pl-4">{s}</p>)}</div>
+              <div><span className={C.info}>EDUCATION</span>{profile.education.map((e) => <p key={e.title} className="pl-4">{e.title}, {e.school}</p>)}</div>
+              <p><span className={C.info}>LANGUAGES</span><br />&nbsp;&nbsp;{profile.languages.join(", ")}</p>
+              <p><span className={C.info}>SEE ALSO</span><br />&nbsp;&nbsp;funfact(1), contact(1)</p>
             </div>
           );
-        } else if (!lsTarget && currentDir === '~') {
-          output = (
-            <div className="text-terminal-cyan flex flex-wrap gap-4">
-              <span>experience.log</span>
-              <span className="text-terminal-amber">skills/</span>
-              <span>CHRISTINE_OKOTH.pdf</span>
-              <span className="text-terminal-green">scan_skills.sh</span>
+        case "pwd":
+          return <p>/home/okoth/chriss{cwd.slice(1)}</p>;
+        case "ls": {
+          const dir = dirOf(cwd, args[0]);
+          if (!dir) return <p className={C.err}>ls: cannot access &apos;{args[0]}&apos;: No such file or directory</p>;
+          return (
+            <p className="flex flex-wrap gap-x-5">
+              {listing(dir).map((f) => <span key={f} className={f.endsWith("/") ? C.hi : f.endsWith(".sh") ? C.info : ""}>{f}</span>)}
+            </p>
+          );
+        }
+        case "cd": {
+          const dir = dirOf(cwd, args[0]);
+          if (!dir) return <p className={C.err}>cd: {args[0]}: No such file or directory</p>;
+          setCwd(dir);
+          return null;
+        }
+        case "cat": {
+          if (!arg) return <p className={C.err}>Usage: cat [file]</p>;
+          const path = arg.replace(/^~\//, "");
+          const inProject = cwd.startsWith("~/projects/") ? cwd.slice(11) : null;
+          const projectSlug =
+            (inProject && (path === "readme.md" || path === "readme") && inProject) ||
+            (path.startsWith("projects/") && path.split("/")[1]) ||
+            (cwd === "~/projects" && path.replace(/\/.*$/, ""));
+          if (projectSlug && slugs.includes(projectSlug)) return <ProjectCard slug={projectSlug} />;
+          const skill = path.replace(/^skills\//, "").replace(/\.txt$/, "");
+          if ((cwd === "~/skills" || path.startsWith("skills/")) && skill in skillsByCategory)
+            return <p className="flex flex-wrap gap-2">{skillsByCategory[skill].map((s) => <span key={s.name} className="rounded border border-line px-2">✓ {s.name}</span>)}</p>;
+          if (cwd !== "~") return <p className={C.err}>cat: {args[0]}: No such file or directory</p>;
+          if (path === "now.md") return <ProjectCard slug="robin" />;
+          if (path === "experience.log" || path === "experience") return <ExperienceLog />;
+          if (path === "writing.md") return <WritingLinks />;
+          if (path === "christine_okoth.pdf")
+            return <p className={C.dim}>This is a PDF, and it prints as gibberish. Try <span className={C.hi}>download</span>.</p>;
+          if (path === "scan_skills.sh")
+            return <pre className={C.dim}>{"#!/bin/bash\necho \"Initializing skill verification...\"\nfind ./skills -type f -exec cat {} \;"}</pre>;
+          if (path === "projects" || path === "skills" || path.endsWith("/")) return <p className={C.err}>cat: {args[0]}: Is a directory</p>;
+          return <p className={C.err}>cat: {args[0]}: No such file or directory</p>;
+        }
+        case "./scan_skills.sh":
+          return <p className="flex flex-wrap gap-x-4">{Object.values(skillsByCategory).flat().map((s) => <span key={s.name}><span className={C.info}>[OK]</span> {s.name}</span>)}</p>;
+        case "open": {
+          if (!arg) return <p className={C.err}>Usage: open &lt;{sections.join("|")}|project&gt;</p>;
+          if (sections.includes(arg)) {
+            setOpen(false);
+            setTimeout(() => scrollTo(arg), 50);
+            return <p className={C.dim}>Opening {arg}…</p>;
+          }
+          if (slugs.includes(arg)) {
+            setOpen(false);
+            setTimeout(() => {
+              const el = document.getElementById(`project-${arg}`);
+              if (el instanceof HTMLDetailsElement) el.open = true;
+              el?.scrollIntoView({ behavior: "smooth", block: "center" });
+            }, 50);
+            return <p className={C.dim}>Opening {arg}…</p>;
+          }
+          return <p className={C.err}>open: {args[0]}: nothing by that name. Try ls projects.</p>;
+        }
+        case "projects":
+          return (
+            <div className="space-y-1">
+              {projects.map((p) => (
+                <p key={p.slug}><span className={`${C.hi} inline-block w-56 max-w-[45%] align-top`}>{p.featured ? "★ " : ""}{p.slug}/</span><span className={C.dim}>{p.summary.split(". ")[0].replace(/\.$/, "")}</span></p>
+              ))}
+              <p className={C.info}>client work: {clientWork.map((p) => p.slug).join(", ")}</p>
+              <p className={C.dim}>cat projects/&lt;name&gt; for details, open &lt;name&gt; to jump there.</p>
             </div>
           );
-        } else {
-          output = <p className="text-terminal-red">ls: cannot access &apos;{args[0]}&apos;: No such file or directory</p>;
+        case "experience":
+          return <ExperienceLog />;
+        case "skills":
+          return (
+            <div>
+              {Object.entries(skillsByCategory).map(([c, s]) => (
+                <p key={c}>drwxr-xr-x&nbsp; <span className={C.hi}>{c}/</span> <span className={C.dim}>({s.map((x) => x.name).join(", ")})</span></p>
+              ))}
+            </div>
+          );
+        case "writing":
+        case "blogs":
+          return <WritingLinks />;
+        case "contact":
+          return (
+            <div>
+              <p>Email:&nbsp;&nbsp;&nbsp; <a href={`mailto:${profile.email}`} className={C.hi}>{profile.email}</a></p>
+              <p>GitHub:&nbsp;&nbsp; <a href={profile.links.github} target="_blank" rel="noreferrer" className={C.hi}>github.com/chriss1525</a></p>
+              <p>LinkedIn: <a href={profile.links.linkedin} target="_blank" rel="noreferrer" className={C.hi}>linkedin.com/in/christine-okoth</a></p>
+            </div>
+          );
+        case "download":
+        case "cv": {
+          const a = document.createElement("a");
+          a.href = profile.cv;
+          a.download = "CHRISTINE_OKOTH.pdf";
+          setTimeout(() => a.click(), 400);
+          return <p className={C.info}>Downloading CHRISTINE_OKOTH.pdf…</p>;
         }
-        break;
-      case 'cat':
-        if (args.length === 0) {
-          output = <p className="text-terminal-red">Usage: cat [file]</p>;
-        } else {
-          const target = args[0].toLowerCase();
-          const fileName = target.split('/').pop() || '';
-          // Strip potential extensions for skill lookups
-          const skillKey = fileName.replace(/\.(sol|ts|tsx|js|rs|md)$/, '');
-
-          if (target === 'experience.log' || (target === 'experience' && currentDir === '~')) {
-            output = (
-              <div className="space-y-6 text-terminal-cyan mt-2 border-l border-terminal-green/20 pl-4">
-                {experience.map((exp, i) => (
-                  <div key={i}>
-                    <p className="text-terminal-amber font-bold underline">{exp.title}</p>
-                    <p className="text-xs opacity-70 mb-1">{exp.link !== "#" ? exp.link : ""}</p>
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed">{exp.description}</p>
-                  </div>
-                ))}
-              </div>
-            );
-          } else if (target === 'christine_okoth.pdf') {
-            output = (
-              <div className="text-terminal-cyan mt-2 border-l border-terminal-amber/30 pl-4 space-y-2">
-                <p className="text-terminal-amber font-bold underline">[PDF CONTENT PREVIEW: CHRISTINE_OKOTH.pdf]</p>
-                <p><span className="text-terminal-amber">Role:</span> Fullstack Software Engineer | Web3 Developer | Educator</p>
-                <p><span className="text-terminal-amber">Summary:</span> Experienced engineer specialized in system architecture and blockchain integration. Passionate about building robust software that solves real-world problems and educating the next generation of Web3 developers.</p>
-                <p><span className="text-terminal-amber">Contact:</span> okothchris15@gmail.com | github.com/chriss1525</p>
-                <p className="text-xs opacity-50 italic mt-2">To get the full document, use the &apos;download&apos; command.</p>
-              </div>
-            );
-          } else if (target === 'scan_skills.sh') {
-            output = (
-              <div className="text-terminal-green font-mono text-xs opacity-80">
-                <p>#!/bin/bash</p>
-                <p>echo &quot;Initializing skill verification...&quot;</p>
-                <p># Recursive scan of all skill directories</p>
-                <p>find ./skills -type f -exec cat {} \;</p>
-              </div>
-            );
-          } else if (skillsByCategory[skillKey as keyof typeof skillsByCategory]) {
-            const skills = skillsByCategory[skillKey as keyof typeof skillsByCategory];
-            output = (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {skills.map((skill: string) => (
-                  <span key={skill} className="text-terminal-green border border-terminal-green/30 px-2 py-0.5 rounded text-xs">
-                    ✓ {skill}
-                  </span>
-                ))}
-              </div>
-            );
-          } else if (target.includes('skill')) {
-            output = <p className="text-terminal-red">cat: {args[0]}: Is a directory</p>;
-          } else {
-            output = <p className="text-terminal-red">cat: {args[0]}: No such file or directory</p>;
-          }
+        case "theme": {
+          const next = (arg && (palettes as readonly string[]).includes(arg)
+            ? arg
+            : palettes[(palettes.indexOf(currentPalette()) + 1) % palettes.length]) as Palette;
+          if (arg && next !== arg) return <p className={C.err}>theme: unknown palette. Try {palettes.join(", ")}</p>;
+          setPalette(next);
+          return <p className={C.hi}>Theme set to {next}.</p>;
         }
-        break;
-      case './scan_skills.sh':
-        output = <SkillScanner />;
-        break;
-      case 'download':
-        output = (
-          <div className="text-terminal-cyan">
-            <p>Initiating download sequence...</p>
-            <p className="text-terminal-green animate-pulse mt-1">Downloading CHRISTINE_OKOTH.pdf...</p>
-          </div>
-        );
-        setTimeout(() => {
-          const link = document.createElement('a');
-          link.href = '/CHRISTINE_OKOTH.pdf';
-          link.download = 'CHRISTINE_OKOTH.pdf';
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-        }, 800);
-        break;
-      case 'theme':
-        const themes = [
-          { name: 'Neon Green', hex: '#00ff00' },
-          { name: 'Cyberpunk Magenta', hex: '#ff00ff' },
-          { name: 'Electric Cyan', hex: '#00ffff' },
-          { name: 'Terminal Amber', hex: '#ffb000' },
-          { name: 'Hacker Red', hex: '#ff0000' }
-        ];
-        const nextTheme = themes[themeCount.current % themes.length];
-        document.documentElement.style.setProperty('--terminal-green', nextTheme.hex);
-        output = <p style={{ color: nextTheme.hex }}>Theme successfully updated to {nextTheme.name}!</p>;
-        themeCount.current += 1;
-        break;
-      case 'coffee':
-        output = (
-          <pre className="text-terminal-amber text-xs leading-tight">
-            {`
-  (  )   (   )  )
-   ) (   )  (  (
-   ( )  (    ) )
-   _____________
-  <_____________> ___
-  |             |/ _ \\
-  |               | | |
-  |               |_| |
- ___|             |\\___/
-/    \\___________/    \\
-\\_____________________/
-            `}
-          </pre>
-        );
-        break;
-      default:
-        output = <p className="text-terminal-red">Command not found: {cmd}. Type &apos;help&apos; for available commands.</p>;
-    }
+        case "mode":
+          if (arg !== "light" && arg !== "dark") return <p className={C.err}>Usage: mode light|dark</p>;
+          setTheme(arg);
+          return <p className={C.hi}>Switched to {arg} mode.</p>;
+        case "funfact":
+          return <p>{profile.funfacts[counters.current.funfact++ % profile.funfacts.length]}</p>;
+        case "history":
+          return <div>{past.map((h, i) => <p key={i}><span className={C.dim}>{String(i + 1).padStart(4)}</span>&nbsp; {h}</p>)}</div>;
+        case "echo":
+          return <p>{args.join(" ")}</p>;
+        case "sudo":
+          return <p className={C.err}>chriss is not in the sudoers file. This incident will be reported.</p>;
+        case "rm": {
+          const target = args.filter((a) => !a.startsWith("-"))[0]?.toLowerCase();
+          if (!target) return <p className={C.err}>rm: missing operand</p>;
+          const msg =
+            target === "experience.log" ? "Deleting my past won't give me a future with you. Permission denied." :
+            target === "christine_okoth.pdf" ? "File is currently being read by a potential employer. Try again after I'm hired!" :
+            target === "scan_skills.sh" ? "Self-preservation protocol active. This script is too pretty to die." :
+            target.startsWith("skills") || target.startsWith("projects") ? "Is a directory. Use rmdir (but please don't)." :
+            "No such file or directory. Are you trying to delete my hopes and dreams?";
+          return <p className={C.err}>rm: cannot remove &apos;{target}&apos;: {msg}</p>;
+        }
+        case "rmdir":
+          if (!arg) return <p className={C.err}>rmdir: missing operand</p>;
+          return arg.replace(/\/$/, "") === "skills" || arg.replace(/\/$/, "") === "projects" ? (
+            <div className={C.err}><p>rmdir: failed to remove &apos;{arg}&apos;: Directory not empty.</p><p className="text-xs italic opacity-70">Also, why would you want to delete my talent?</p></div>
+          ) : (
+            <p className={C.err}>rmdir: failed to remove &apos;{arg}&apos;: No such directory.</p>
+          );
+        case "coffee":
+          return (
+            <pre className={`${C.info} text-xs leading-tight`}>{`
+   (  )   (   )  )
+    ) (   )  (  (
+    ( )  (    ) )
+    _____________
+   <_____________> ___
+   |             |/ _ \\
+   |               | | |
+   |               |_| |
+  ___|             |\\___/
+ /    \\___________/    \\
+ \\_____________________/`}</pre>
+          );
+        default:
+          return <p className={C.err}>Command not found: {cmd}. Type &apos;help&apos; for available commands.</p>;
+      }
+    },
+    [cwd, past],
+  );
 
-    setHistory(prev => [...prev, { input: trimmedInput, output, dir: currentDir }]);
-    setCurrentInput('');
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const raw = input.trim();
+    setInput("");
+    setCursor(null);
+    if (!raw) return;
+    setPast((p) => [...p, raw]);
+    const cmd = raw.split(/\s+/)[0].toLowerCase();
+    if (cmd === "clear") return setLines([]);
+    if (cmd === "exit") return setOpen(false);
+    setLines((l) => [...l, { input: raw, dir: cwd, output: run(raw) }]);
   };
 
-  return (
-    <div className="w-full flex flex-col font-mono cursor-text" onClick={() => inputRef.current?.focus()}>
-      <div className="mb-4">
-        <p className="text-terminal-gray text-sm">
-          {'>'} Boot sequence complete. Handing over to interactive shell...
-        </p>
-        <p className="text-terminal-gray text-sm mt-1">
-          {'>'} System ready. <span className="text-terminal-cyan animate-pulse">Type a command below and press Enter. (try &apos;help&apos;)</span>
-        </p>
-      </div>
+  const complete = () => {
+    const parts = input.split(/\s+/);
+    if (parts.length === 1) {
+      const hits = commands.filter((c) => c.startsWith(parts[0].toLowerCase()));
+      if (hits.length === 1) setInput(`${hits[0]} `);
+      else if (hits.length > 1) setLines((l) => [...l, { input, dir: cwd, output: <p className={C.dim}>{hits.join("  ")}</p> }]);
+      return;
+    }
+    const cmd = parts[0].toLowerCase();
+    const word = parts[parts.length - 1];
+    const pool =
+      cmd === "open" ? [...sections, ...slugs] :
+      cmd === "theme" ? [...palettes] :
+      cmd === "mode" ? ["light", "dark"] :
+      cmd === "man" ? ["chriss"] :
+      cmd === "cd" ? listing(cwd).filter((f) => f.endsWith("/")) :
+      listing(cwd);
+    const hits = pool.filter((c) => c.toLowerCase().startsWith(word.toLowerCase()));
+    if (hits.length === 1) setInput([...parts.slice(0, -1), hits[0]].join(" "));
+    else if (hits.length > 1) setLines((l) => [...l, { input, dir: cwd, output: <p className={C.dim}>{hits.join("  ")}</p> }]);
+  };
 
-      <div className="flex-1 overflow-y-auto space-y-4 max-h-[250px] pr-2">
-          {history.map((record, index) => (
-            <div key={index} className="space-y-1">
-              <div className="flex items-center text-terminal-green">
-                <span className="mr-2">okoth@chriss:{record.dir}$</span>
-                <span>{record.input}</span>
-              </div>
-              <div className="ml-4">
-                {record.output}
-              </div>
+  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Tab") {
+      e.preventDefault();
+      complete();
+    } else if (e.key === "Escape") {
+      setOpen(false);
+    } else if (e.key === "ArrowUp" && past.length) {
+      e.preventDefault();
+      const i = cursor === null ? past.length - 1 : Math.max(0, cursor - 1);
+      setCursor(i);
+      setInput(past[i]);
+    } else if (e.key === "ArrowDown" && cursor !== null) {
+      e.preventDefault();
+      const i = cursor + 1;
+      setCursor(i < past.length ? i : null);
+      setInput(i < past.length ? past[i] : "");
+    }
+  };
+
+  if (!open) return null;
+  const prompt = (dir: string) => <span className={C.hi}>okoth@chriss:{dir}$</span>;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-bg/60 px-3 pt-[8vh] backdrop-blur-sm" onClick={() => setOpen(false)}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Interactive shell"
+        className="flex max-h-[75vh] w-full max-w-3xl flex-col overflow-hidden rounded-lg border border-line bg-surface font-mono text-sm shadow-2xl"
+        onClick={(e) => {
+          e.stopPropagation();
+          inputRef.current?.focus();
+        }}
+      >
+        <div className="flex items-center justify-between border-b border-line px-4 py-2 text-xs text-dim">
+          <span>~/chriss · shell</span>
+          <button onClick={() => setOpen(false)} className="hover:text-accent">esc</button>
+        </div>
+        <div className="flex-1 space-y-3 overflow-y-auto p-4">
+          <p className={C.dim}>&gt; Welcome. Type <span className={C.hi}>help</span> to see what you can do, or <span className={C.hi}>open robin</span> to jump in.</p>
+          {lines.map((l, i) => (
+            <div key={i} className="space-y-1">
+              <p className="break-all">{prompt(l.dir)} {l.input}</p>
+              {l.output && <div className="pl-2">{l.output}</div>}
             </div>
           ))}
-
-          <form onSubmit={handleCommandSubmit} className="flex items-center text-terminal-green mt-4">
-            <span className="mr-2">okoth@chriss:{currentDir}$</span>
+          <form onSubmit={submit} className="flex items-center gap-2">
+            {prompt(cwd)}
             <input
               ref={inputRef}
-              type="text"
-              value={currentInput}
-              onChange={(e) => setCurrentInput(e.target.value)}
-              className="flex-1 bg-transparent border-none outline-none text-terminal-green font-mono caret-terminal-green"
-              autoFocus
+              id="shell-input"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={onKeyDown}
+              className="min-w-0 flex-1 bg-transparent text-fg caret-[var(--accent)] outline-none"
               autoComplete="off"
-              spellCheck="false"
-              placeholder="Type 'help'..."
+              autoCapitalize="off"
+              spellCheck={false}
+              aria-label="Command"
             />
           </form>
-          <div ref={endOfTerminalRef} />
+          <div ref={endRef} />
         </div>
+      </div>
     </div>
   );
-};
-
-export default TerminalCommands;
+}

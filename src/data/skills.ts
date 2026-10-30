@@ -1,33 +1,43 @@
-export const skillsByCategory = {
-  blockchain: [
-    "Rust",
-    "Motoko",
-    "Solidity",
-    "Smart Contracts",
-    "ICP",
-    "Ethereum",
-    "EVM L2s",
-    "Masumi Network",
-  ],
+/** Each skill names the stack labels (as written in projects.ts) that count as using it. */
+export const skillsByCategory: Record<string, { name: string; matches?: string[] }[]> = {
   backend: [
-    "Node.js",
-    "Microservices",
-    "APIs",
-    "PostgreSQL",
-    "MySQL",
-    "InfluxDB",
+    { name: "Node.js", matches: ["Node.js", "Express", "Hono"] },
+    { name: "TypeScript" },
+    { name: "PostgreSQL", matches: ["PostgreSQL", "pgvector"] },
+    { name: "Python" },
+    { name: "APIs & microservices", matches: ["Express", "Hono"] },
+    { name: "MySQL" },
+    { name: "InfluxDB" },
+  ],
+  ai: [
+    { name: "MCP" },
+    { name: "LLM pipelines", matches: ["MCP", "Demucs"] },
+    { name: "Vector search", matches: ["pgvector"] },
+  ],
+  blockchain: [
+    { name: "Solidity", matches: ["Solidity", "Hardhat"] },
+    { name: "Rust" },
+    { name: "ICP" },
+    { name: "Motoko" },
+    { name: "EVM L2s" },
+    { name: "Masumi Network" },
   ],
   frontend: [
-    "TypeScript",
-    "React",
-    "Next.js",
-    "Tailwind CSS",
+    { name: "React", matches: ["Next.js"] },
+    { name: "Next.js" },
+    { name: "Tailwind CSS" },
+    { name: "HTML & CSS", matches: ["HTML", "CSS"] },
   ],
-  tools_and_practices: [
-    "Git",
-    "Docker",
-    "Unit & Integration Testing",
-    "Security Best Practices",
-    "Cross-functional Collaboration",
+  practice: [
+    { name: "Git" },
+    { name: "Docker" },
+    { name: "Unit & integration testing" },
+    { name: "Security best practices" },
   ],
 };
+
+/** Projects whose stack uses a skill. */
+export function projectsUsing<T extends { stack: string[] }>(skill: { name: string; matches?: string[] }, list: T[]): T[] {
+  const keys = skill.matches ?? [skill.name];
+  return list.filter((p) => p.stack.some((s) => keys.includes(s)));
+}

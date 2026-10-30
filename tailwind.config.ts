@@ -1,34 +1,26 @@
 import type { Config } from "tailwindcss";
 
 export default {
-  content: [
-    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
-  ],
+  content: ["./src/components/**/*.{ts,tsx}", "./src/app/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
-        terminal: {
-          bg: "var(--terminal-bg)",
-          green: "var(--terminal-green)",
-          amber: "var(--terminal-amber)",
-          cyan: "var(--terminal-cyan)",
-          red: "var(--terminal-red)",
-          gray: "var(--terminal-gray)",
-          white: "var(--terminal-white)",
-        },
+        bg: "var(--bg)",
+        surface: "var(--surface)",
+        fg: "var(--fg)",
+        dim: "var(--dim)",
+        line: "var(--line)",
+        accent: "var(--accent)",
+        second: "var(--second)",
+        danger: "var(--danger)",
+        chip: "var(--chip)",
       },
       fontFamily: {
-        mono: ['JetBrains Mono', 'Fira Code', 'Courier New', 'monospace'],
+        display: ["var(--font-display)", "ui-monospace", "monospace"],
+        mono: ["var(--font-mono)", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
+        sans: ["var(--font-sans)", "system-ui", "-apple-system", "Segoe UI", "sans-serif"],
       },
-      animation: {
-        'typewriter': 'typewriter 3s steps(40, end)',
-        'blink': 'blink 1s infinite',
-        'flicker': 'flicker 0.15s infinite linear',
-      },
+      maxWidth: { prose: "68ch" },
     },
   },
   plugins: [],

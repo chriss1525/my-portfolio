@@ -1,64 +1,48 @@
 "use client";
 
 import Link from "next/link";
-import { Github, Linkedin, Mail, Terminal } from "lucide-react";
+import { Moon, Sun, Terminal } from "lucide-react";
+import { useSyncExternalStore } from "react";
+import { currentTheme, setTheme, subscribeTheme } from "@/lib/prefs";
+import { openShell } from "./TerminalCommands";
 
-interface HeaderProps {
-  onShowExperience: () => void;
-  onShowSkills: () => void;
-}
+const sections = ["now", "projects", "experience", "skills", "writing", "contact"];
 
-export default function Header({ onShowExperience, onShowSkills }: HeaderProps) {
+export default function Header() {
+  const theme = useSyncExternalStore(subscribeTheme, currentTheme, () => null);
+  const toggle = () => setTheme(currentTheme() === "dark" ? "light" : "dark");
+
   return (
-    <header className="fixed top-0 w-full z-50 bg-terminal-bg/95 border-b border-terminal-green/30 backdrop-blur-sm">
-      <nav className="container mx-auto p-4 flex justify-between items-center">
-        {/* Terminal-style logo */}
-        <Link href="/" className="flex items-center space-x-2 group">
-          <Terminal className="w-6 h-6 text-terminal-green group-hover:text-terminal-amber transition-colors" />
-          <span className="text-lg font-mono text-terminal-green group-hover:text-terminal-amber transition-colors">
-            ~/Chriss
-          </span>
+    <header className="sticky top-0 z-40 border-b border-line bg-bg/90 backdrop-blur">
+      <nav className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3 md:px-6" aria-label="Main">
+        <Link href="#top" className="font-mono font-semibold text-accent">
+          ~/{"chriss"}
         </Link>
-        
-        {/* Navigation */}
-        <div className="flex space-x-4 md:space-x-6 font-mono text-sm md:text-base">
-          <button onClick={onShowExperience} className="text-terminal-green hover:text-terminal-amber transition-colors">
-            <span className="hidden md:inline text-terminal-gray">./</span>experience
-          </button>
-          <button onClick={onShowSkills} className="text-terminal-green hover:text-terminal-amber transition-colors">
-            <span className="hidden md:inline text-terminal-gray">./</span>skills
-          </button>
+        <div className="hidden gap-5 font-mono text-sm text-dim md:flex">
+          {sections.map((s) => (
+            <a key={s} href={`#${s}`} className="transition-colors hover:text-accent">
+              {s}
+            </a>
+          ))}
         </div>
-
-        {/* Social Links */}
-        <div className="flex space-x-3 md:space-x-4">
-          <a
-            href="https://github.com/chriss1525"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-terminal-green hover:text-terminal-amber transition-colors hover:drop-shadow-[0_0_8px_rgba(0,255,0,0.8)] group"
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggle}
+            className="rounded-md border border-line p-1.5 text-dim transition-colors hover:text-accent"
+            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
           >
-            <Github className="w-5 h-5 group-hover:scale-110 transition-transform" />
-          </a>
-          <a
-            href="https://linkedin.com/in/christine-okoth"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-terminal-green hover:text-terminal-amber transition-colors hover:drop-shadow-[0_0_8px_rgba(0,255,0,0.8)] group"
+            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
+          <button
+            onClick={openShell}
+            className="flex items-center gap-2 rounded-md border border-line px-2.5 py-1 font-mono text-xs text-dim transition-colors hover:border-accent hover:text-accent"
           >
-            <Linkedin className="w-5 h-5 group-hover:scale-110 transition-transform" />
-          </a>
-          <a 
-            href="mailto:okothchris15@gmail.com"
-            className="text-terminal-green hover:text-terminal-amber transition-colors hover:drop-shadow-[0_0_8px_rgba(0,255,0,0.8)] group"
-          >
-            <Mail className="w-5 h-5 group-hover:scale-110 transition-transform" />
-          </a>
+            <Terminal className="h-3.5 w-3.5" />
+            <span>shell</span>
+            <kbd className="hidden text-[10px] sm:inline">⌘K</kbd>
+          </button>
         </div>
       </nav>
-      
-      {/* Terminal-style bottom border */}
-      <div className="h-px bg-gradient-to-r from-transparent via-terminal-green to-transparent opacity-50"></div>
     </header>
   );
 }

@@ -1,17 +1,42 @@
 import "./globals.css";
-import { Inter } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { IBM_Plex_Sans, JetBrains_Mono, Martian_Mono } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { profile } from "@/data/profile";
+import { prefsBootScript } from "@/lib/prefs";
 
-const inter = Inter({ subsets: ["latin"] });
+const display = Martian_Mono({ subsets: ["latin"], weight: ["400", "600", "800"], variable: "--font-display" });
+const mono = JetBrains_Mono({ subsets: ["latin"], weight: ["400", "600"], variable: "--font-mono" });
+const sans = IBM_Plex_Sans({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-sans" });
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export const metadata: Metadata = {
+  metadataBase: new URL(profile.siteUrl),
+  title: `${profile.name} · ${profile.title}`,
+  description: profile.pitch,
+  openGraph: {
+    title: `${profile.name} · ${profile.title}`,
+    description: profile.pitch,
+    url: profile.siteUrl,
+    siteName: `~/${profile.handle}`,
+    type: "website",
+  },
+  twitter: { card: "summary_large_image" },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f7f7fc" },
+    { media: "(prefers-color-scheme: dark)", color: "#0c0a1a" },
+  ],
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark">
-      <body className={`${inter.className} bg-gray-900 text-white`}>
+    <html lang="en" className={`${display.variable} ${mono.variable} ${sans.variable}`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: prefsBootScript }} />
+      </head>
+      <body className="font-sans antialiased">
         {children}
         <SpeedInsights />
       </body>

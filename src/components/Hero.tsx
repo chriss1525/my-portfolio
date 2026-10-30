@@ -1,161 +1,80 @@
 "use client";
-import React, { useState, useEffect } from "react";
+
+import { useSyncExternalStore } from "react";
+import { profile } from "@/data/profile";
+import { projects } from "@/data/projects";
+import MatrixRain from "./MatrixRain";
 import Typewriter from "./Typewriter";
-import TerminalCommands from "./TerminalCommands";
+import { openShell } from "./TerminalCommands";
 
-interface HeroProps {
-  onSkip?: () => void;
+/** Typing plays once per visit; reduced motion or a repeat visit shows it typed. Decided once, on first read. */
+let playHero: boolean | undefined;
+function shouldPlay() {
+  if (playHero === undefined) {
+    try {
+      playHero = !matchMedia("(prefers-reduced-motion: reduce)").matches && !sessionStorage.getItem("hero-played");
+      sessionStorage.setItem("hero-played", "1");
+    } catch {
+      playHero = false;
+    }
+  }
+  return playHero;
 }
+const noSubscribe = () => () => {};
 
-const Hero = ({ onSkip }: HeroProps) => {
-  const [step, setStep] = useState(0);
-  const [skipped, setSkipped] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setStep(1), 300); // start sequence
-    return () => clearTimeout(timer);
-  }, []);
-
-  const handleSkip = () => {
-    setSkipped(true);
-    setStep(6);
-    if (onSkip) onSkip();
-  };
-
-  const asciiArt = `
-     ██████╗ ██╗  ██╗██████╗ ██╗███████╗███████╗
-    ██╔════╝ ██║  ██║██╔══██╗██║██╔════╝██╔════╝
-    ██║      ███████║██████╔╝██║███████╗███████╗
-    ██║      ██╔══██║██╔══██╗██║╚════██║╚════██║
-    ╚██████╗ ██║  ██║██║  ██║██║███████║███████║
-     ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚══════╝╚══════╝
-  `;
-
-  const roles = "Role: Fullstack Software Engineer | Web3 Developer | Educator";
-  const status = "Status: Architecting scalable backend systems | Code, coffee, and continuous learning";
-  const mission = "Mission: Building robust, innovative software solutions that solve real-world problems";
+export default function Hero() {
+  const play = useSyncExternalStore(noSubscribe, shouldPlay, () => false);
+  const featured = projects.filter((p) => p.featured).slice(0, 3);
 
   return (
-    <section className="w-full min-h-screen flex items-center justify-center px-6 md:px-16 py-16 bg-terminal-bg">
-      <div className="terminal-window max-w-6xl w-full p-4 md:p-8 mx-auto mt-12 md:mt-16">
-        {/* Terminal Header */}
-        <div className="flex items-center gap-2 mb-6 pb-3 border-b border-terminal-green/30">
-          <div className="w-3 h-3 bg-terminal-red rounded-full"></div>
-          <div className="w-3 h-3 bg-terminal-amber rounded-full"></div>
-          <div className="w-3 h-3 bg-terminal-green rounded-full"></div>
+    <section id="top" className="relative overflow-hidden">
+      {play && <MatrixRain />}
+      <div className="relative grid gap-10 py-14 md:grid-cols-[1.3fr_1fr] md:py-24">
+        <div className="min-w-0">
+          <p className="font-mono text-sm text-dim">
+            <span className="text-accent">okoth@chriss</span>:~${" "}
+            {play ? <Typewriter text="whoami" speed={90} delay={200} /> : <>whoami</>}
+            <span className="cursor ml-1" aria-hidden="true" />
+          </p>
+          <h1 className="mt-4 font-display text-[clamp(2.4rem,7vw,4.5rem)] font-extrabold leading-[1.02] tracking-tighter">
+            Christine
+            <br />
+            Okoth
+          </h1>
+          <p className="mt-6 max-w-[46ch] text-lg">{profile.pitch}</p>
+          <p className="mt-6 border-l-[3px] border-accent bg-chip px-4 py-2 font-mono text-sm">
+            <span className="text-second">now →</span> {profile.now.label} · {profile.now.stack}
+          </p>
+          <div className="mt-7 flex flex-wrap gap-3 font-mono text-sm">
+            <a href="#projects" className="rounded-md bg-accent px-4 py-2 font-semibold text-bg">
+              ls projects
+            </a>
+            <a href={profile.cv} download className="rounded-md border border-accent px-4 py-2 text-accent">
+              cat cv.pdf
+            </a>
+            <button onClick={openShell} className="rounded-md border border-accent px-4 py-2 text-accent">
+              open shell
+            </button>
+          </div>
         </div>
-        
-        {/* Escape Hatch Button */}
-        {step < 6 && (
-          <button 
-            onClick={handleSkip} 
-            className="absolute top-4 md:top-6 right-4 md:right-6 text-terminal-gray hover:text-terminal-white text-[10px] md:text-xs font-mono border border-terminal-gray/30 px-2 py-1 rounded transition-colors z-10 bg-terminal-bg/80"
-          >
-            [Skip Animation]
-          </button>
-        )}
 
-        <div className="space-y-4">
-          {/* 1) whoami */}
-          {step >= 1 && (
-            <div className="flex items-start">
-              <span className="text-terminal-green font-mono mr-2">$</span>
-              {skipped ? (
-                <span className="text-terminal-green font-mono">whoami</span>
-              ) : (
-                <Typewriter
-                  key="whoami"
-                  text="whoami"
-                  speed={20}
-                  showCursor={false}
-                  onComplete={() => setTimeout(() => setStep(2), 120)}
-                  className="text-terminal-green"
-                />
-              )}
-            </div>
-          )}
-
-          {/* 2) ASCII + Name */}
-          {step >= 2 && (
-            <div className="space-y-2">
-              <pre className="text-terminal-green text-[10px] sm:text-xs md:text-sm font-mono leading-tight opacity-60 overflow-x-auto scrollbar-hide">
-                {asciiArt}
-              </pre>
-              {skipped ? (
-                <span className="text-terminal-green block font-mono">Name: Christine Adhiambo Okoth</span>
-              ) : (
-                <Typewriter
-                  key="name"
-                  text="Name: Christine Adhiambo Okoth"
-                  speed={12}
-                  showCursor={false}
-                  className="text-terminal-green block"
-                  onComplete={() => setTimeout(() => setStep(3), 120)}
-                />
-              )}
-            </div>
-          )}
-
-          {/* 3) Roles */}
-          {step >= 3 && (
-            <div className="space-y-2">
-              {skipped ? (
-                <span className="text-terminal-amber block font-mono">{roles}</span>
-              ) : (
-                <Typewriter
-                  key="roles"
-                  text={roles}
-                  speed={12}
-                  showCursor={false}
-                  className="text-terminal-amber block"
-                  onComplete={() => setTimeout(() => setStep(4), 150)}
-                />
-              )}
-            </div>
-          )}
-
-          {/* 4) Status */}
-          {step >= 4 && (
-            skipped ? (
-              <span className="text-terminal-cyan block font-mono">{status}</span>
-            ) : (
-              <Typewriter
-                key="status"
-                text={status}
-                speed={12}
-                showCursor={false}
-                className="text-terminal-cyan block"
-                onComplete={() => setTimeout(() => setStep(5), 120)}
-              />
-            )
-          )}
-
-          {/* 5) Mission */}
-          {step >= 5 && (
-            skipped ? (
-              <span className="text-terminal-white block font-mono">{mission}</span>
-            ) : (
-              <Typewriter
-                key="mission"
-                text={mission}
-                speed={12}
-                showCursor={false}
-                className="text-terminal-white block"
-                onComplete={() => setTimeout(() => setStep(6), 150)}
-              />
-            )
-          )}
-
-          {/* 6) Ready prompt */}
-          {step >= 6 && (
-            <div className="mt-6 pt-6 border-t border-terminal-green/30 animate-in fade-in duration-500">
-              <TerminalCommands />
-            </div>
-          )}
+        <div className="self-start rounded-lg border border-line bg-bg/80 p-4 font-mono text-[13px] backdrop-blur-sm">
+          <p className="mb-1 text-dim">$ ls ~/projects --featured</p>
+          {featured.map((p) => (
+            <a
+              key={p.slug}
+              href={`#project-${p.slug}`}
+              className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 border-b border-dashed border-line py-2.5 last:border-0"
+            >
+              <span className="font-semibold text-accent">{p.slug}/</span>
+              <span className="text-right text-second">
+                {p.year} · {p.tags[0]}
+              </span>
+              <span className="col-span-2 font-sans text-sm text-dim">{p.summary.split(". ")[0].replace(/\.$/, "")}.</span>
+            </a>
+          ))}
         </div>
       </div>
     </section>
   );
-};
-
-export default Hero;
+}

@@ -1,70 +1,53 @@
 "use client";
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef } from "react";
 
-const MatrixRain = () => {
+/** A short burst of rain behind the hero, in the current accent colour, then it fades out. */
+const MatrixRain = ({ duration = 2600 }: { duration?: number }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) return;
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    const parent = canvas.parentElement!;
+    canvas.width = parent.clientWidth;
+    canvas.height = parent.clientHeight;
 
-    // Set canvas size
-    const resizeCanvas = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
-
-    // Matrix characters
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%^&*()_+-=[]{}|;:,.<>?';
-    const matrix = chars.split('');
-
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*<>{}[]=+;:".split("");
     const fontSize = 14;
-    const columns = Math.floor(canvas.width / fontSize);
-    const drops: number[] = [];
-
-    // Initialize drops
-    for (let i = 0; i < columns; i++) {
-      drops[i] = 1;
-    }
+    const drops = Array.from({ length: Math.floor(canvas.width / fontSize) }, () => Math.random() * -20);
+    const styles = getComputedStyle(document.documentElement);
+    const accent = styles.getPropertyValue("--accent").trim();
+    const bg = styles.getPropertyValue("--bg").trim();
 
     const draw = () => {
-      // Add transparent black background to create trailing effect
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.04)';
+      ctx.globalAlpha = 0.12;
+      ctx.fillStyle = bg;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      ctx.fillStyle = '#00ff00';
-      ctx.font = `${fontSize}px JetBrains Mono, monospace`;
-
-      for (let i = 0; i < drops.length; i++) {
-        const text = matrix[Math.floor(Math.random() * matrix.length)];
-        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-
-        // Reset drop to top randomly or when it reaches bottom
-        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
-          drops[i] = 0;
-        }
-        drops[i]++;
-      }
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = accent;
+      ctx.font = `${fontSize}px ui-monospace, monospace`;
+      drops.forEach((y, i) => {
+        ctx.fillText(chars[Math.floor(Math.random() * chars.length)], i * fontSize, y * fontSize);
+        drops[i] = y * fontSize > canvas.height && Math.random() > 0.97 ? 0 : y + 1;
+      });
     };
 
-    const interval = setInterval(draw, 35);
-
+    const interval = setInterval(draw, 45);
+    const stop = setTimeout(() => clearInterval(interval), duration);
     return () => {
       clearInterval(interval);
-      window.removeEventListener('resize', resizeCanvas);
+      clearTimeout(stop);
     };
-  }, []);
+  }, [duration]);
 
   return (
     <canvas
       ref={canvasRef}
-      className="matrix-rain fixed inset-0 pointer-events-none"
-      style={{ zIndex: -1 }}
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-0 opacity-0"
+      style={{ animation: `rainfade ${duration + 1400}ms ease-out forwards` }}
     />
   );
 };
