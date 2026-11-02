@@ -145,7 +145,7 @@ export const onChain: Project[] = [
     name: "DEX Comparator",
     stage: "bounty",
     summary: "Compares DEX prices on-chain, with KRNL Protocol signing the price data.",
-    story: "KRNL had a bounty, so I jumped in. It paid fifty dollars.",
+    story: "KRNL had a bounty, so I jumped in. I only got fifty dollars for it 😢",
     stack: ["Solidity", "KRNL"],
     year: "2025",
     repo: gh("dex-comparator"),
