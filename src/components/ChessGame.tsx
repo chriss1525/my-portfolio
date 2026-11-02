@@ -41,6 +41,10 @@ interface State {
   showLocked: boolean;
   thinking: boolean;
   message: string;
+  /** Phones: the open brick is shown as a sheet over the board. */
+  sheet: boolean;
+  /** Phones: the bottom bar is announcing a brick that was just won. */
+  barNew: boolean;
 }
 
 const fresh = (): State => ({
@@ -59,6 +63,8 @@ const fresh = (): State => ({
   showLocked: false,
   thinking: false,
   message: "Your move. Try anything.",
+  sheet: false,
+  barNew: false,
 });
 
 /** How long black "thinks" before replying, in ms: 1.3–2.2 s, so it doesn't feel instant. */
@@ -92,6 +98,10 @@ export default function ChessGame({ writing }: { writing: Writing }) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [router]);
+
+  useEffect(() => {
+    document.body.style.overflow = st.sheet ? "hidden" : "";
+  }, [st.sheet]);
 
   const over = game.isGameOver();
   const target = st.onLine && st.moves < legalsMate.length ? legalsMate[st.moves].white : null;
@@ -152,6 +162,7 @@ export default function ChessGame({ writing }: { writing: Writing }) {
       order,
       visits,
       open: pick > -1 ? pick + 1 : s.open,
+      barNew: newly.length > 0 ? true : pick > -1 ? false : s.barNew,
       queenLost: false,
       special,
       last: [from, to],
@@ -190,6 +201,7 @@ export default function ChessGame({ writing }: { writing: Writing }) {
           fen: g.fen(),
           order: o,
           open,
+          barNew: lost ? true : s.barNew,
           queenLost: lost,
           special,
           thinking: false,
@@ -216,6 +228,11 @@ export default function ChessGame({ writing }: { writing: Writing }) {
     }
     if (legal.promotion) return setSt((s) => ({ ...s, promoting: { from: legal.from, to: legal.to } }));
     playWhite(legal.from, legal.to);
+  }
+
+  function showAll() {
+    clearTimers();
+    setSt((s) => ({ ...s, order: bricks.map((_, i) => i), open: 1, onLine: false, thinking: false, hint: false, barNew: false, message: "Everything is unlocked. Tap any brick." }));
   }
 
   function replay() {
@@ -269,17 +286,23 @@ export default function ChessGame({ writing }: { writing: Writing }) {
   }
   const locked = bricks.map((b, i) => ({ b, i })).filter(({ i }) => !st.order.includes(i));
   const message = st.hint ? (target ? legalsMate[st.moves].hint : "You’ve left the famous line, so try what’s still hidden.") : st.message;
-  const btn = "rounded-lg border-2 border-black px-3.5 py-2 font-mono text-[13px] shadow-[0_3px_0_#000] active:translate-y-[2px] active:shadow-[0_1px_0_#000]";
+  const brickProps = { open: st.open, eyebrow, title, note: special?.note, finale: mated ? "Checkmate." : "Built.", tint: light ? "bg-black/[.08]" : "bg-white/[.12]", writing };
+  const btn = "whitespace-nowrap rounded-lg border-2 border-black px-3.5 py-2 font-mono text-[13px] shadow-[0_3px_0_#000] active:translate-y-[2px] active:shadow-[0_1px_0_#000]";
 
   return (
-    <div className="mx-auto flex max-w-[1360px] flex-wrap items-start justify-center gap-11 px-4 pb-14 pt-1 md:px-7">
+    <div className="mx-auto flex max-w-[1360px] flex-wrap items-start justify-center gap-8 px-4 pb-28 pt-1 md:px-7 lg:gap-11 lg:pb-14">
       <div className="w-full min-w-0 max-w-[600px] flex-[0_1_600px]">
         <div className="mb-3 flex items-baseline justify-between gap-3">
-          <p className="font-display text-[22px] font-extrabold tracking-tight">
+          <p className="whitespace-nowrap font-display text-[17px] font-extrabold tracking-tight sm:text-[22px]">
             {mated ? (game.turn() === "b" ? "Checkmate." : "Checkmated.") : over ? "Draw." : st.thinking ? "Black to move…" : done ? "Built." : "Your move."}
           </p>
-          <p className="font-mono text-xs text-dim">
-            {st.order.length} of {bricks.length} bricks · {over ? `${st.moves} moves` : `move ${st.moves + 1}`}
+          <p className="whitespace-nowrap font-mono text-xs text-dim">
+            <span className="sm:hidden">
+              {st.order.length}/{bricks.length} bricks
+            </span>
+            <span className="hidden sm:inline">
+              {st.order.length} of {bricks.length} bricks · {over ? `${st.moves} moves` : `move ${st.moves + 1}`}
+            </span>
           </p>
         </div>
 
@@ -364,7 +387,7 @@ export default function ChessGame({ writing }: { writing: Writing }) {
           <p aria-live="polite" className="min-h-6 max-w-[380px] font-medium">
             {message}
           </p>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {done && !mated && (
               <button onClick={replay} className={`${btn} bg-[#c91a09] font-semibold text-white`}>
                 show me the mate
@@ -385,19 +408,16 @@ export default function ChessGame({ writing }: { writing: Writing }) {
             >
               new game
             </button>
+            <button onClick={showAll} className={`${btn} bg-raised text-fg lg:hidden`}>
+              everything
+            </button>
           </div>
         </div>
       </div>
 
       <section aria-label="Your build" className="flex w-full min-w-0 max-w-[520px] flex-[1_1_440px] flex-col gap-5">
-        <div className="flex justify-end">
-          <button
-            onClick={() => {
-              clearTimers();
-              setSt((s) => ({ ...s, order: bricks.map((_, i) => i), open: 1, onLine: false, thinking: false, hint: false, message: "Everything is unlocked. Click any brick." }));
-            }}
-            className={`${btn} bg-raised text-xs text-fg`}
-          >
+        <div className="hidden justify-end lg:flex">
+          <button onClick={showAll} className={`${btn} bg-raised text-xs text-fg`}>
             show me everything
           </button>
         </div>
@@ -405,7 +425,7 @@ export default function ChessGame({ writing }: { writing: Writing }) {
         <div
           key={`${st.open}-${st.visits[st.open - 1] ?? 0}-${st.queenLost}-${special?.eyebrow ?? ""}`}
           aria-live="polite"
-          className="relative mt-3 animate-[drop_.5s_ease-out] rounded-[10px] px-6 pb-8 pt-7 md:px-7"
+          className={`relative mt-3 animate-[drop_.5s_ease-out] rounded-[10px] px-6 pb-8 pt-7 md:px-7 ${st.open === 0 ? "" : "hidden lg:block"}`}
           style={{
             background: cur.bg,
             color: cur.fg,
@@ -417,27 +437,28 @@ export default function ChessGame({ writing }: { writing: Writing }) {
               <span key={i} className="h-[19px] w-[34px] rounded-t-[4px] rounded-b-[2px]" style={{ background: cur.bg, boxShadow: "inset 0 3px 0 rgba(255,255,255,.35), inset 0 -2px 0 rgba(0,0,0,.18)" }} />
             ))}
           </div>
-          <BrickContent open={st.open} eyebrow={eyebrow} title={title} note={special?.note} finale={mated ? "Checkmate." : "Built."} tint={light ? "bg-black/[.08]" : "bg-white/[.12]"} writing={writing} />
+          <BrickContent {...brickProps} />
         </div>
 
         <div>
-          <div className="flex min-h-10 flex-col-reverse items-center">
+          <p className="mb-1 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-dim lg:hidden">Your bricks · tap to open</p>
+          <div className="flex min-h-10 gap-2 overflow-x-auto pb-1 pt-2.5 lg:flex-col-reverse lg:items-center lg:gap-0 lg:overflow-visible lg:pb-0 lg:pt-0">
             {st.order.map((k, i) => {
               const b = bricks[k];
               return (
                 <button
                   key={k}
-                  onClick={() => setSt((s) => ({ ...s, open: k + 1, queenLost: false, special: null }))}
+                  onClick={() => setSt((s) => ({ ...s, open: k + 1, queenLost: false, special: null, sheet: true, barNew: false }))}
                   aria-label={`Open brick: ${b.label}`}
-                  className={`relative mt-2 h-[42px] max-w-full rounded font-mono text-[13px] font-semibold ${i === st.order.length - 1 ? "animate-[drop_.45s_ease-out]" : ""}`}
+                  className={`relative h-[42px] w-auto max-w-full shrink-0 rounded px-4 font-mono text-[13px] font-semibold lg:mt-2 lg:w-[var(--w)] lg:px-0 ${i === st.order.length - 1 ? "animate-[drop_.45s_ease-out]" : ""}`}
                   style={{
-                    width: b.width,
+                    ["--w" as string]: `${b.width}px`,
                     background: b.bg,
                     color: b.fg,
                     boxShadow: `inset 0 -5px 0 rgba(0,0,0,.2), inset 0 2px 0 rgba(255,255,255,.3)${st.open === k + 1 ? ", 0 0 0 3px #ecebe7" : ""}`,
                   }}
                 >
-                  <span aria-hidden="true" className="absolute -top-2 left-3.5 right-3.5 flex justify-between">
+                  <span aria-hidden="true" className="absolute -top-2 left-3.5 right-3.5 hidden justify-between lg:flex">
                     {Array.from({ length: Math.max(2, Math.round(b.width / 60)) }, (_, j) => (
                       <span key={j} className="h-3 w-[22px] rounded-t-[4px] rounded-b-[2px]" style={{ background: b.bg, boxShadow: "inset 0 3px 0 rgba(255,255,255,.35), inset 0 -2px 0 rgba(0,0,0,.18)" }} />
                     ))}
@@ -449,7 +470,7 @@ export default function ChessGame({ writing }: { writing: Writing }) {
           </div>
           <div aria-hidden="true" className="h-[18px] rounded bg-[#00852b] bg-[radial-gradient(circle_at_9px_6px,rgba(255,255,255,.35)_4px,transparent_4.5px)] bg-[length:18px_18px] shadow-[inset_0_-4px_0_rgba(0,0,0,.2)]" />
           <p className="mt-2 font-mono text-xs text-dim">
-            {st.order.length === 0 ? "Your build starts here." : done ? "Every brick. That’s me. Click any brick to reopen it." : "Click a brick to reopen it."}
+            {st.order.length === 0 ? "Your build starts here." : done ? "Every brick. That’s me. Open any brick again from the tower." : "Open any brick again from the tower."}
           </p>
           {locked.length > 0 && (
             <>
@@ -475,6 +496,39 @@ export default function ChessGame({ writing }: { writing: Writing }) {
           )}
         </div>
       </section>
+
+      {st.open > 0 && !st.sheet && (
+        <button
+          key={`${st.open}-${st.visits[st.open - 1] ?? 0}-${st.barNew}`}
+          onClick={() => setSt((s) => ({ ...s, sheet: true, barNew: false }))}
+          className="fixed inset-x-3 bottom-[max(12px,env(safe-area-inset-bottom))] z-40 flex animate-[rise_.4s_ease-out] items-center justify-between gap-3 rounded-xl px-4 py-3.5 text-left font-mono text-sm font-semibold shadow-[inset_0_-5px_0_rgba(0,0,0,.2),0_10px_30px_rgba(0,0,0,.5)] lg:hidden"
+          style={{ background: cur.bg, color: cur.fg }}
+        >
+          <span>
+            {st.barNew ? "You won: " : ""}
+            {brick?.label}
+          </span>
+          <span className="text-xs opacity-80">tap to open ↑</span>
+        </button>
+      )}
+
+      {st.sheet && st.open > 0 && (
+        <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/60 lg:hidden" onClick={() => setSt((s) => ({ ...s, sheet: false }))}>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={brick?.label}
+            className="max-h-[88vh] overflow-y-auto rounded-t-2xl px-5 pb-[max(28px,env(safe-area-inset-bottom))] pt-4"
+            style={{ background: cur.bg, color: cur.fg }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button onClick={() => setSt((s) => ({ ...s, sheet: false }))} className="mb-4 flex items-center gap-2 rounded-lg bg-black/20 px-3 py-2 font-mono text-[13px] font-semibold">
+              ← back to the board
+            </button>
+            <BrickContent {...brickProps} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -128,7 +128,7 @@ export default function BrickContent({
               </div>
             ))}
           </div>
-          <div className="mt-1.5 grid grid-cols-6 gap-1 text-center font-mono text-[10.5px] font-semibold leading-tight">
+          <div lang="en" className="mt-1.5 grid grid-cols-6 gap-1 text-center font-mono text-[9px] font-semibold leading-tight hyphens-auto [overflow-wrap:anywhere] sm:text-[10.5px]">
             {profile.path.map((step) => (
               <span key={step}>{step}</span>
             ))}

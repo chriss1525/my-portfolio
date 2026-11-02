@@ -111,7 +111,7 @@ function ProjectList() {
           <p className={C.info}># {label}</p>
           {list.map((p) => (
             <p key={p.slug}>
-              <span className={`${C.hi} inline-block w-56 max-w-[45%] align-top`}>{p.slug}/</span>
+              <span className={`${C.hi} block sm:inline-block sm:w-56 sm:align-top`}>{p.slug}/</span>
               <span className={C.dim}>{p.summary.split(". ")[0].replace(/\.$/, "")}</span>
             </p>
           ))}
@@ -140,6 +140,10 @@ export default function TerminalCommands() {
   const inputRef = useRef<HTMLInputElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const counters = useRef({ whoami: 1, funfact: 0 });
+
+  useEffect(() => {
+    if (matchMedia("(pointer: fine)").matches) inputRef.current?.focus({ preventScroll: true });
+  }, []);
 
   // ⌘K / Ctrl+K flips back to the play side.
   useEffect(() => {
@@ -332,7 +336,11 @@ export default function TerminalCommands() {
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    const raw = input.trim();
+    exec(input);
+  };
+
+  const exec = (typed: string) => {
+    const raw = typed.trim();
     setInput("");
     setCursor(null);
     if (!raw) return;
@@ -431,14 +439,28 @@ export default function TerminalCommands() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={onKeyDown}
-            placeholder="try: whoami, cat projects, funfact, sudo, coffee"
+            placeholder="type a command, or tap one below"
             className="min-w-0 flex-1 bg-transparent text-fg caret-[var(--coral)] outline-none placeholder:text-[#6a6a72]"
             autoComplete="off"
             autoCapitalize="off"
             spellCheck={false}
-            autoFocus
           />
         </form>
+        <div className="flex flex-wrap gap-2 pt-1">
+          {["help", "whoami", "projects", "experience", "funfact", "contact", "coffee", "sudo"].map((c) => (
+            <button
+              key={c}
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                exec(c);
+              }}
+              className="rounded-md border border-line bg-raised px-3 py-1.5 text-xs text-fg hover:border-blue"
+            >
+              {c}
+            </button>
+          ))}
+        </div>
         <div ref={endRef} />
       </div>
     </div>
