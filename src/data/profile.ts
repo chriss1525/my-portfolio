@@ -24,6 +24,8 @@ export const profile = {
     { title: "Bachelor of Education, Guidance and Counselling", school: "Moi University, Eldoret", date: "" },
   ],
   languages: ["English (fluent)", "Swahili (native)", "German (basics)"],
+  /** The walking pawn: from first square to queen. */
+  path: ["B.Ed", "instructional design", "UX design", "ALX", "blockchain", "AI"],
   story: [
     "I studied education and meant to teach language and literature.",
     "Instructional design pulled me towards tech, ALX gave me the foundations, and I taught myself the rest until backend systems became my day job.",

@@ -3,7 +3,6 @@ import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Sans, JetBrains_Mono, Martian_Mono } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { profile } from "@/data/profile";
-import { prefsBootScript } from "@/lib/prefs";
 
 const display = Martian_Mono({ subsets: ["latin"], weight: ["400", "600", "800"], variable: "--font-display" });
 const mono = JetBrains_Mono({ subsets: ["latin"], weight: ["400", "600"], variable: "--font-mono" });
@@ -24,18 +23,12 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f7f7fc" },
-    { media: "(prefers-color-scheme: dark)", color: "#0c0a1a" },
-  ],
+  themeColor: "#141416",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${display.variable} ${mono.variable} ${sans.variable}`} suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: prefsBootScript }} />
-      </head>
+    <html lang="en" className={`${display.variable} ${mono.variable} ${sans.variable}`}>
       <body className="font-sans antialiased">
         {children}
         <SpeedInsights />

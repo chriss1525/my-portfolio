@@ -1,165 +1,154 @@
-export type Tag = "ai" | "backend" | "web3" | "frontend" | "teaching" | "play";
-
 export interface Project {
   slug: string;
   name: string;
   summary: string;
+  /** The part of the journey it belongs to, in my words. */
+  story?: string;
+  /** Where it came from: ALX, HNG, a bounty, my own idea… */
+  stage?: string;
   stack: string[];
   year: string;
-  tags: Tag[];
-  featured?: boolean;
-  /** Past client work: described, never linked. */
+  /** Client work: described, never linked to code. */
   client?: string;
+  /** What I did on it. */
   role?: string;
+  /** Where I work now. */
+  current?: boolean;
   repo?: string;
   live?: string;
-  images?: string[];
 }
 
-export const tags: Tag[] = ["ai", "backend", "web3", "frontend", "teaching", "play"];
+const gh = (repo: string) => `https://github.com/chriss1525/${repo}`;
 
-export const projects: Project[] = [
+/** Where I started: ALX, a lot of C, and the side projects I built to teach myself. Oldest first. */
+export const learning: Project[] = [
   {
-    slug: "blockcoop",
-    name: "BlockCoop",
-    summary:
-      "DeFi savings and lending protocol with liquidity pools, leveraged borrowing, oracle price feeds and an admin dashboard for running it.",
-    stack: ["Solidity", "Hardhat", "Node.js", "PostgreSQL", "Next.js"],
-    year: "2025",
-    tags: ["web3", "backend"],
-    featured: true,
-    repo: "https://github.com/chriss1525/DeFi-protocol",
-    images: [
-      "/projects/blockcoop/blockcoop.png",
-      "/projects/blockcoop/dashboard.png",
-      "/projects/blockcoop/savings.png",
-      "/projects/blockcoop/liquidity.png",
-      "/projects/blockcoop/wallet.png",
-      "/projects/blockcoop/admin.png",
-    ],
+    slug: "simple-shell",
+    name: "simple_shell",
+    stage: "ALX",
+    summary: "A Unix shell in C.",
+    story: "Built when I was struggling with C, and the reason I stopped being scared of it.",
+    stack: ["C"],
+    year: "2022",
+    repo: gh("simple_shell"),
   },
   {
-    slug: "chrome-extension-server",
-    name: "Screen recorder API",
-    summary:
-      "API behind a screen-recording Chrome extension: uploads videos, transcribes them, and serves the video and transcript data.",
-    stack: ["Node.js", "Express"],
+    slug: "alx-c",
+    name: "printf, monty & friends",
+    stage: "ALX",
+    summary: "printf from scratch, a bytecode interpreter, sorting algorithms and binary trees.",
+    story: "The ALX C projects: memory, pointers and data structures, the hard way.",
+    stack: ["C"],
     year: "2023",
-    tags: ["backend", "ai"],
-    featured: true,
-    repo: "https://github.com/chriss1525/chrome-extension-server",
+    repo: gh("monty"),
   },
   {
-    slug: "jamz",
-    name: "JamZ",
-    summary: "Audio API that splits songs into vocals and instrumentals with Demucs and stores them in Supabase.",
-    stack: ["Python", "Demucs", "Supabase"],
-    year: "2024",
-    tags: ["backend", "ai"],
-    featured: true,
-    repo: "https://github.com/chriss1525/JamZ",
-  },
-  {
-    slug: "penny",
-    name: "Penny",
-    summary: "Personal finance assistant.",
-    stack: ["Next.js", "TypeScript"],
-    year: "2024",
-    tags: ["frontend"],
-    featured: true,
-    repo: "https://github.com/chriss1525/Penny",
-    live: "https://penny-one.vercel.app",
-  },
-  {
-    slug: "dex-comparator",
-    name: "DEX Comparator",
-    summary: "Compares DEX prices on-chain, with KRNL Protocol signing the price data.",
-    stack: ["Solidity", "KRNL"],
-    year: "2025",
-    tags: ["web3"],
-    repo: "https://github.com/chriss1525/dex-comparator",
-  },
-  {
-    slug: "fundraisa",
-    name: "Fundraisa",
-    summary: "Decentralised fundraising campaigns on the Internet Computer.",
-    stack: ["ICP", "JavaScript"],
-    year: "2024",
-    tags: ["web3"],
-    repo: "https://github.com/chriss1525/fundraisa",
-  },
-  {
-    slug: "flipdeck",
-    name: "FlipDeck",
-    summary: "Flashcards app for making decks and studying online.",
-    stack: ["HTML", "JavaScript"],
+    slug: "madlib",
+    name: "Madlib",
+    stage: "my own",
+    summary: "A word game for the terminal, built in C and then again in Python.",
+    story: "A challenge I set myself, to understand how command-line programs really work.",
+    stack: ["C", "Python"],
     year: "2023",
-    tags: ["teaching", "frontend"],
-    repo: "https://github.com/chriss1525/FlipDeck",
+    repo: gh("Madlib"),
+  },
+  {
+    slug: "snake",
+    name: "Snake",
+    stage: "my own",
+    summary: "The classic snake game.",
+    story: "I was learning Python and thought a snake game would be fun. It was.",
+    stack: ["Python"],
+    year: "2023",
+    repo: gh("Snake_Game"),
   },
   {
     slug: "commandline-guru",
     name: "Commandline Guru",
-    summary: "Telegram bot that teaches command-line tips and shortcuts.",
+    stage: "my own",
+    summary: "A Telegram bot that teaches command-line tips and shortcuts.",
+    story: "My first attempt at EdTech: a bot that teaches, built while I was still learning Python and bots myself.",
     stack: ["Python", "Telegram"],
     year: "2023",
-    tags: ["teaching"],
-    repo: "https://github.com/chriss1525/Commandline_Guru",
+    repo: gh("Commandline_Guru"),
   },
   {
-    slug: "african-wooers",
-    name: "African Wooers",
-    summary: "Event site for Africa Web3 × Fintech builder meetups and office hours.",
-    stack: ["Next.js"],
-    year: "2025",
-    tags: ["teaching", "web3", "frontend"],
-    repo: "https://github.com/chriss1525/african-wooers",
-    live: "https://african-wooers.vercel.app",
-  },
-  {
-    slug: "bloodkonekt",
-    name: "BloodKonekt",
-    summary: "Connects blood donors with people who need blood.",
-    stack: ["Next.js"],
-    year: "2025",
-    tags: ["frontend"],
-    repo: "https://github.com/chriss1525/bloodkonekt",
-    live: "https://bloodkonekt.vercel.app",
-  },
-  {
-    slug: "harpoon",
-    name: "Harpoon",
-    summary: "Backend for an events app, built with a team.",
-    stack: ["Node.js"],
+    slug: "flipdeck",
+    name: "FlipDeck",
+    stage: "my own",
+    summary: "A flashcards app for making decks and studying online.",
+    story: "My own project to learn HTML, CSS and JavaScript. It taught me I enjoy the frontend’s craft but love the backend’s puzzles, which is why I lean backend today.",
+    stack: ["HTML", "CSS", "JavaScript"],
     year: "2023",
-    tags: ["backend"],
+    repo: gh("FlipDeck"),
+  },
+  {
+    slug: "airbnb-clone",
+    name: "AirBnB clone",
+    stage: "ALX",
+    summary: "A fullstack AirBnB clone: a console, a REST API and a web app, across several repos.",
+    story: "Where I learned to build with a partner, across the backend and the frontend.",
+    stack: ["Python", "Flask", "MySQL", "JavaScript"],
+    year: "2023",
+    repo: gh("AirBnB_clone_v3"),
+  },
+];
+
+/** The projects that took me past the basics. */
+export const levellingUp: Project[] = [
+  {
+    slug: "chrome-extension-server",
+    name: "Screen recorder API",
+    stage: "HNG internship",
+    summary: "The API behind a screen-recording Chrome extension: it uploads videos, transcribes them, and serves the video and transcript data.",
+    story: "It pushed me past the simple REST APIs I thought I knew into real backend work. HNG shaped my resilience with complex code.",
+    stack: ["Node.js", "Express"],
+    year: "2023",
+    repo: gh("chrome-extension-server"),
+  },
+  {
+    slug: "jamz",
+    name: "JamZ",
+    stage: "final ALX project",
+    summary: "An audio API that splits songs into vocals and instrumentals with Demucs and stores them in Supabase.",
+    story: "The one I loved. Where I got comfortable with APIs, Postman and shipping something whole.",
+    stack: ["JavaScript", "Demucs", "Supabase"],
+    year: "2024",
+    repo: gh("JamZ"),
+  },
+];
+
+/** How I learned what blockchains are for. */
+export const onChain: Project[] = [
+  {
+    slug: "fundraisa",
+    name: "Fundraisa",
+    stage: "learning",
+    summary: "Decentralised fundraising campaigns on the Internet Computer.",
+    story: "My first ICP project, built while I was learning what blockchain is for, and my first time with Rust-family languages (back when Motoko was rough).",
+    stack: ["ICP", "Motoko", "JavaScript"],
+    year: "2023",
+    repo: gh("fundraisa"),
   },
   {
     slug: "task-manager",
     name: "Task Manager",
-    summary: "Task management canister on the Internet Computer.",
+    stage: "learning",
+    summary: "A simple task manager as a pure Rust canister on the Internet Computer.",
+    story: "Another learning one: Rust, with nothing else in the way.",
     stack: ["Rust", "ICP"],
-    year: "2024",
-    tags: ["web3", "backend"],
-    repo: "https://github.com/chriss1525/task_manager",
+    year: "2023",
+    repo: gh("task_manager"),
   },
   {
-    slug: "my-people",
-    name: "My People",
-    summary: "A small friendship app for the people who matter.",
-    stack: ["Next.js"],
+    slug: "dex-comparator",
+    name: "DEX Comparator",
+    stage: "bounty",
+    summary: "Compares DEX prices on-chain, with KRNL Protocol signing the price data.",
+    story: "KRNL had a bounty, so I jumped in. It paid fifty dollars.",
+    stack: ["Solidity", "KRNL"],
     year: "2025",
-    tags: ["play", "frontend"],
-    repo: "https://github.com/chriss1525/my-people",
-    live: "https://my-people-lac.vercel.app",
-  },
-  {
-    slug: "love-letter",
-    name: "Love Letter",
-    summary: "Interactive medieval scroll letter with calligraphy, ink stains and music.",
-    stack: ["HTML", "CSS", "JavaScript"],
-    year: "2026",
-    tags: ["play", "frontend"],
+    repo: gh("dex-comparator"),
   },
 ];
 
@@ -168,45 +157,42 @@ export const clientWork: Project[] = [
     slug: "robin",
     name: "Robin",
     client: "Robin",
-    role: "Software engineer across the server, web app and AI pipeline",
+    current: true,
+    live: "https://withrobin.ai/knowledge",
     summary:
-      "AI second brain for organisations. Conversations become atomic notes, filed into topic wikis anyone in the workspace can search. One instance per organisation, with an MCP server so any AI client can read and write to it.",
-    stack: ["TypeScript", "Hono", "PostgreSQL", "pgvector", "Next.js", "MCP"],
+      "An AI second brain for organisations. People talk to it through Claude, the web app or any MCP client, and it files what they say into topic wikis the whole workspace can search. One instance per organisation, and every wiki has a guardian.",
+    role: "The server and API, the AI agent that turns conversations into notes and wikis, the MCP tools, permissions and database migrations, and the weekly release train.",
+    stack: ["TypeScript", "Hono", "PostgreSQL", "pgvector", "Next.js", "MCP", "BullMQ"],
     year: "2026",
-    tags: ["ai", "backend"],
   },
   {
     slug: "aeli",
     name: "Aeli Health",
     client: "Aeli Health",
-    role: "Built all of it, and deployed it to Google Cloud",
     summary:
-      "AI therapy-support platform that recommends support avenues, tracks conversation themes over time, and runs sign-in and Stripe subscriptions.",
+      "An AI therapy-support platform: it recommends support avenues, tracks conversation themes over time, and runs sign-in, feedback and Stripe subscriptions.",
+    role: "Built all of it, then containerised it and deployed it to Google Cloud.",
     stack: ["TypeScript", "Express", "PostgreSQL", "Stripe", "Docker", "Cloud Build"],
     year: "2026",
-    tags: ["ai", "backend"],
   },
   {
     slug: "new-skin",
     name: "New Skin",
     client: "Skintech",
-    role: "Built most of the backend",
-    summary: "Skin-analysis app: accounts with JWT auth and storage for the AI analysis results.",
+    summary: "A skin-analysis app for a skincare company: people get AI analysis of their skin and keep their results.",
+    role: "Built most of the backend, including accounts with JWT auth and storage for the AI analysis results.",
     stack: ["JavaScript", "PostgreSQL"],
     year: "2025–26",
-    tags: ["ai", "backend"],
+  },
+  {
+    slug: "blockcoop",
+    name: "BlockCoop",
+    client: "BlockCoop",
+    summary: "A DeFi savings and lending protocol with liquidity pools, leveraged borrowing, oracle price feeds and an admin dashboard.",
+    role: "Built the core components and the admin interface. Client work, and a big learning experience too.",
+    stack: ["Solidity", "Hardhat", "Node.js", "PostgreSQL", "Next.js"],
+    year: "2025",
   },
 ];
 
-/** Where it started: ALX and early experiments. */
-export const archive = [
-  { name: "simple_shell", what: "A Unix shell in C", repo: "https://github.com/chriss1525/simple_shell" },
-  { name: "monty", what: "Monty bytecode interpreter in C", repo: "https://github.com/chriss1525/monty" },
-  { name: "printf", what: "printf from scratch in C", repo: "https://github.com/chriss1525/printf" },
-  { name: "AirBnB_clone_v3", what: "Console, REST API and web app", repo: "https://github.com/chriss1525/AirBnB_clone_v3" },
-  { name: "sorting_algorithms", what: "Sorting algorithms in C", repo: "https://github.com/chriss1525/sorting_algorithms" },
-  { name: "binary_trees", what: "Binary trees in C", repo: "https://github.com/chriss1525/binary_trees" },
-  { name: "Madlib", what: "My first terminal game, in C", repo: "https://github.com/chriss1525/Madlib" },
-];
-
-export const allProjects = [...projects, ...clientWork];
+export const allProjects = [...learning, ...levellingUp, ...onChain, ...clientWork];

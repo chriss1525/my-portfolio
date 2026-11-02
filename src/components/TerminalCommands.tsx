@@ -1,19 +1,15 @@
 "use client";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { profile } from "@/data/profile";
 import { experience } from "@/data/experience";
-import { allProjects, clientWork, projects } from "@/data/projects";
+import { allProjects, clientWork, learning, levellingUp, onChain } from "@/data/projects";
 import { skillsByCategory } from "@/data/skills";
-import { currentPalette, palettes, setPalette, setTheme, type Palette } from "@/lib/prefs";
 
-const OPEN_EVENT = "shell:open";
-export const openShell = () => window.dispatchEvent(new Event(OPEN_EVENT));
-
-const sections = ["now", "projects", "experience", "skills", "writing", "contact"];
 const homeFiles = ["now.md", "projects/", "experience.log", "skills/", "writing.md", "CHRISTINE_OKOTH.pdf", "scan_skills.sh"];
 const commands = [
   "help", "whoami", "man", "ls", "cd", "pwd", "cat", "open", "projects", "experience", "skills", "writing",
-  "contact", "download", "theme", "mode", "funfact", "coffee", "history", "echo", "clear", "exit",
+  "contact", "download", "funfact", "coffee", "history", "echo", "clear", "exit",
 ];
 const whoami = [
   "Fullstack engineer: backend systems, AI knowledge tools and smart contracts.",
@@ -31,10 +27,10 @@ interface Line {
 
 const C = {
   ok: "text-fg",
-  info: "text-second",
+  info: "text-blue",
   dim: "text-dim",
-  err: "text-danger",
-  hi: "text-accent",
+  err: "text-coral",
+  hi: "text-green",
 };
 
 function dirOf(cwd: string, arg?: string) {
@@ -55,16 +51,13 @@ function listing(dir: string): string[] {
   return [];
 }
 
-function scrollTo(id: string) {
-  document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
 function ProjectCard({ slug }: { slug: string }) {
   const p = allProjects.find((x) => x.slug === slug)!;
   return (
     <div className="space-y-1">
-      <p className={C.hi}>{p.name} <span className={C.dim}>· {p.year}{p.client ? " · client work" : ""}</span></p>
+      <p className={C.hi}>{p.name} <span className={C.dim}>· {p.year}{p.client ? " · client work" : p.stage ? ` · ${p.stage}` : ""}</span></p>
       <p>{p.summary}</p>
+      {p.story && <p className="italic">“{p.story}”</p>}
       {p.role && <p className={C.info}>{p.role}</p>}
       <p className={C.dim}>{p.stack.join(" · ")}</p>
       {(p.repo || p.live) && (
@@ -96,37 +89,72 @@ const WritingLinks = () => (
   </div>
 );
 
+function HomeListing() {
+  return (
+    <p className="flex flex-wrap gap-x-5">
+      {listing("~").map((f) => <span key={f} className={f.endsWith("/") ? C.hi : f.endsWith(".sh") ? C.info : ""}>{f}</span>)}
+    </p>
+  );
+}
+
+function ProjectList() {
+  const groups = [
+    ["where I started", learning],
+    ["levelling up", levellingUp],
+    ["built on-chain", onChain],
+    ["client work", clientWork],
+  ] as const;
+  return (
+    <div className="space-y-2">
+      {groups.map(([label, list]) => (
+        <div key={label}>
+          <p className={C.info}># {label}</p>
+          {list.map((p) => (
+            <p key={p.slug}>
+              <span className={`${C.hi} inline-block w-56 max-w-[45%] align-top`}>{p.slug}/</span>
+              <span className={C.dim}>{p.summary.split(". ")[0].replace(/\.$/, "")}</span>
+            </p>
+          ))}
+        </div>
+      ))}
+      <p className={C.dim}>cat projects/&lt;name&gt; for the story, open &lt;name&gt; to visit it.</p>
+    </div>
+  );
+}
+
+/** What the window shows on arrival, as if these were just typed. */
+const intro: Line[] = [
+  { input: "whoami", dir: "~", output: <p>{whoami[0]}</p> },
+  { input: "ls", dir: "~", output: <HomeListing /> },
+  { input: "projects", dir: "~", output: <ProjectList /> },
+];
+
+/** The terminal side: a full-page shell over the same content as the play side. */
 export default function TerminalCommands() {
-  const [open, setOpen] = useState(false);
-  const [lines, setLines] = useState<Line[]>([]);
+  const router = useRouter();
+  const [lines, setLines] = useState<Line[]>(intro);
   const [input, setInput] = useState("");
   const [cwd, setCwd] = useState("~");
   const [past, setPast] = useState<string[]>([]);
   const [cursor, setCursor] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
-  const counters = useRef({ whoami: 0, funfact: 0 });
+  const counters = useRef({ whoami: 1, funfact: 0 });
 
+  // ⌘K / Ctrl+K flips back to the play side.
   useEffect(() => {
-    const onOpen = () => setOpen(true);
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        setOpen((o) => !o);
+        router.push("/");
       }
     };
-    window.addEventListener(OPEN_EVENT, onOpen);
     window.addEventListener("keydown", onKey);
-    return () => {
-      window.removeEventListener(OPEN_EVENT, onOpen);
-      window.removeEventListener("keydown", onKey);
-    };
-  }, []);
-
+    return () => window.removeEventListener("keydown", onKey);
+  }, [router]);
   useEffect(() => {
-    if (open) inputRef.current?.focus();
-  }, [open]);
-  useEffect(() => endRef.current?.scrollIntoView({ block: "nearest" }), [lines]);
+    if (lines !== intro) endRef.current?.scrollIntoView({ block: "nearest" });
+  }, [lines]);
 
   const run = useCallback(
     (raw: string): React.ReactNode | null => {
@@ -138,18 +166,16 @@ export default function TerminalCommands() {
         case "help":
           return (
             <div className="space-y-0.5">
-              <p className={C.info}>Commands (Tab completes, ↑↓ for history, Esc closes):</p>
+              <p className={C.info}>Commands (Tab completes, ↑↓ for history):</p>
               {[
                 ["whoami", "a one-line summary (try it again)"],
                 ["man chriss", "the longer story"],
                 ["ls / cd / cat / pwd", "look around: try cat now.md"],
-                ["open <name>", "jump to a section or project, e.g. open robin"],
+                ["open <name>", "visit a project, or open play for the chess side"],
                 ["projects, experience, skills, writing", "print a section here"],
                 ["contact, download", "get in touch or grab the CV"],
-                ["theme [violet|amber|ice|green]", "change the colours"],
-                ["mode [light|dark]", "switch light and dark"],
                 ["funfact, coffee", "for fun"],
-                ["clear, exit", ""],
+                ["clear, exit", "exit flips to the play side"],
               ].map(([c, d]) => (
                 <p key={c}><span className={`${C.hi} inline-block w-64 max-w-[55%] align-top`}>{c}</span><span className={C.dim}>{d}</span></p>
               ))}
@@ -213,33 +239,20 @@ export default function TerminalCommands() {
         case "./scan_skills.sh":
           return <p className="flex flex-wrap gap-x-4">{Object.values(skillsByCategory).flat().map((s) => <span key={s.name}><span className={C.info}>[OK]</span> {s.name}</span>)}</p>;
         case "open": {
-          if (!arg) return <p className={C.err}>Usage: open &lt;{sections.join("|")}|project&gt;</p>;
-          if (sections.includes(arg)) {
-            setOpen(false);
-            setTimeout(() => scrollTo(arg), 50);
-            return <p className={C.dim}>Opening {arg}…</p>;
+          if (!arg) return <p className={C.err}>Usage: open &lt;play|project&gt;</p>;
+          if (arg === "play") {
+            router.push("/");
+            return <p className={C.dim}>Flipping to the play side…</p>;
           }
-          if (slugs.includes(arg)) {
-            setOpen(false);
-            setTimeout(() => {
-              const el = document.getElementById(`project-${arg}`);
-              if (el instanceof HTMLDetailsElement) el.open = true;
-              el?.scrollIntoView({ behavior: "smooth", block: "center" });
-            }, 50);
-            return <p className={C.dim}>Opening {arg}…</p>;
-          }
-          return <p className={C.err}>open: {args[0]}: nothing by that name. Try ls projects.</p>;
+          const p = allProjects.find((x) => x.slug === arg);
+          if (!p) return <p className={C.err}>open: {args[0]}: nothing by that name. Try ls projects.</p>;
+          const url = p.live ?? p.repo;
+          if (!url) return <p className={C.dim}>{p.name} is client work: the code stays with them. Try cat projects/{p.slug}.</p>;
+          window.open(url, "_blank", "noopener");
+          return <p className={C.dim}>Opening {url}…</p>;
         }
         case "projects":
-          return (
-            <div className="space-y-1">
-              {projects.map((p) => (
-                <p key={p.slug}><span className={`${C.hi} inline-block w-56 max-w-[45%] align-top`}>{p.featured ? "★ " : ""}{p.slug}/</span><span className={C.dim}>{p.summary.split(". ")[0].replace(/\.$/, "")}</span></p>
-              ))}
-              <p className={C.info}>client work: {clientWork.map((p) => p.slug).join(", ")}</p>
-              <p className={C.dim}>cat projects/&lt;name&gt; for details, open &lt;name&gt; to jump there.</p>
-            </div>
-          );
+          return <ProjectList />;
         case "experience":
           return <ExperienceLog />;
         case "skills":
@@ -269,18 +282,6 @@ export default function TerminalCommands() {
           setTimeout(() => a.click(), 400);
           return <p className={C.info}>Downloading CHRISTINE_OKOTH.pdf…</p>;
         }
-        case "theme": {
-          const next = (arg && (palettes as readonly string[]).includes(arg)
-            ? arg
-            : palettes[(palettes.indexOf(currentPalette()) + 1) % palettes.length]) as Palette;
-          if (arg && next !== arg) return <p className={C.err}>theme: unknown palette. Try {palettes.join(", ")}</p>;
-          setPalette(next);
-          return <p className={C.hi}>Theme set to {next}.</p>;
-        }
-        case "mode":
-          if (arg !== "light" && arg !== "dark") return <p className={C.err}>Usage: mode light|dark</p>;
-          setTheme(arg);
-          return <p className={C.hi}>Switched to {arg} mode.</p>;
         case "funfact":
           return <p>{profile.funfacts[counters.current.funfact++ % profile.funfacts.length]}</p>;
         case "history":
@@ -326,7 +327,7 @@ export default function TerminalCommands() {
           return <p className={C.err}>Command not found: {cmd}. Type &apos;help&apos; for available commands.</p>;
       }
     },
-    [cwd, past],
+    [cwd, past, router],
   );
 
   const submit = (e: React.FormEvent) => {
@@ -338,7 +339,7 @@ export default function TerminalCommands() {
     setPast((p) => [...p, raw]);
     const cmd = raw.split(/\s+/)[0].toLowerCase();
     if (cmd === "clear") return setLines([]);
-    if (cmd === "exit") return setOpen(false);
+    if (cmd === "exit") return router.push("/");
     setLines((l) => [...l, { input: raw, dir: cwd, output: run(raw) }]);
   };
 
@@ -353,9 +354,7 @@ export default function TerminalCommands() {
     const cmd = parts[0].toLowerCase();
     const word = parts[parts.length - 1];
     const pool =
-      cmd === "open" ? [...sections, ...slugs] :
-      cmd === "theme" ? [...palettes] :
-      cmd === "mode" ? ["light", "dark"] :
+      cmd === "open" ? ["play", ...slugs] :
       cmd === "man" ? ["chriss"] :
       cmd === "cd" ? listing(cwd).filter((f) => f.endsWith("/")) :
       listing(cwd);
@@ -368,8 +367,6 @@ export default function TerminalCommands() {
     if (e.key === "Tab") {
       e.preventDefault();
       complete();
-    } else if (e.key === "Escape") {
-      setOpen(false);
     } else if (e.key === "ArrowUp" && past.length) {
       e.preventDefault();
       const i = cursor === null ? past.length - 1 : Math.max(0, cursor - 1);
@@ -383,50 +380,66 @@ export default function TerminalCommands() {
     }
   };
 
-  if (!open) return null;
-  const prompt = (dir: string) => <span className={C.hi}>okoth@chriss:{dir}$</span>;
+  const prompt = (dir: string) => (
+    <span className="whitespace-nowrap">
+      <span className="font-semibold text-green">okoth@chriss</span>
+      <span className="text-dim">:</span>
+      <span className="font-semibold text-blue">{dir}</span>
+      <span className="text-dim">$</span>
+    </span>
+  );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-bg/60 px-3 pt-[8vh] backdrop-blur-sm" onClick={() => setOpen(false)}>
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Interactive shell"
-        className="flex max-h-[75vh] w-full max-w-3xl flex-col overflow-hidden rounded-lg border border-line bg-surface font-mono text-sm shadow-2xl"
-        onClick={(e) => {
-          e.stopPropagation();
-          inputRef.current?.focus();
-        }}
-      >
-        <div className="flex items-center justify-between border-b border-line px-4 py-2 text-xs text-dim">
-          <span>~/chriss · shell</span>
-          <button onClick={() => setOpen(false)} className="hover:text-accent">esc</button>
+    <div
+      className="overflow-hidden rounded-xl bg-surface shadow-[0_0_0_1px_var(--line),0_24px_70px_rgba(0,0,0,.6)]"
+      onClick={() => inputRef.current?.focus()}
+    >
+      <div className="relative flex h-[38px] items-center border-b border-line bg-raised px-3.5">
+        <span className="flex gap-2" aria-hidden="true">
+          <span className="h-3 w-3 rounded-full bg-[#ff5f57]" />
+          <span className="h-3 w-3 rounded-full bg-[#febc2e]" />
+          <span className="h-3 w-3 rounded-full bg-[#28c840]" />
+        </span>
+        <span className="absolute left-1/2 -translate-x-1/2 font-sans text-[13px] font-semibold text-dim">~/chriss</span>
+      </div>
+      <div className="space-y-3 p-5 font-mono text-sm leading-relaxed md:p-6">
+        <pre aria-label="CHRISS" className="overflow-x-auto text-[clamp(7px,1.6vw,13px)] leading-[1.1] text-blue">{` ██████╗ ██╗  ██╗██████╗ ██╗███████╗███████╗
+██╔════╝ ██║  ██║██╔══██╗██║██╔════╝██╔════╝
+██║      ███████║██████╔╝██║███████╗███████╗
+██║      ██╔══██║██╔══██╗██║╚════██║╚════██║
+╚██████╗ ██║  ██║██║  ██║██║███████║███████║
+ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚══════╝╚══════╝`}</pre>
+        <div className="text-dim">
+          <p>chriss-os 2.0 · fullstack engineer · teacher · writer</p>
+          <p>
+            Type <span className="font-semibold text-blue">help</span>, or flip to the play side above.
+          </p>
         </div>
-        <div className="flex-1 space-y-3 overflow-y-auto p-4">
-          <p className={C.dim}>&gt; Welcome. Type <span className={C.hi}>help</span> to see what you can do, or <span className={C.hi}>open robin</span> to jump in.</p>
-          {lines.map((l, i) => (
-            <div key={i} className="space-y-1">
-              <p className="break-all">{prompt(l.dir)} {l.input}</p>
-              {l.output && <div className="pl-2">{l.output}</div>}
-            </div>
-          ))}
-          <form onSubmit={submit} className="flex items-center gap-2">
-            {prompt(cwd)}
-            <input
-              ref={inputRef}
-              id="shell-input"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={onKeyDown}
-              className="min-w-0 flex-1 bg-transparent text-fg caret-[var(--accent)] outline-none"
-              autoComplete="off"
-              autoCapitalize="off"
-              spellCheck={false}
-              aria-label="Command"
-            />
-          </form>
-          <div ref={endRef} />
-        </div>
+        {lines.map((l, i) => (
+          <div key={i} className="space-y-1">
+            <p className="break-all">
+              {prompt(l.dir)} {l.input}
+            </p>
+            {l.output && <div>{l.output}</div>}
+          </div>
+        ))}
+        <form onSubmit={submit} className="flex items-center gap-2">
+          <label htmlFor="shell-input">{prompt(cwd)}</label>
+          <input
+            ref={inputRef}
+            id="shell-input"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={onKeyDown}
+            placeholder="try: whoami, cat projects, funfact, sudo, coffee"
+            className="min-w-0 flex-1 bg-transparent text-fg caret-[var(--coral)] outline-none placeholder:text-[#6a6a72]"
+            autoComplete="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            autoFocus
+          />
+        </form>
+        <div ref={endRef} />
       </div>
     </div>
   );

@@ -1,26 +1,25 @@
 # ~/chriss
 
-Christine Okoth's portfolio: a terminal-flavoured site built with Next.js 16, TypeScript and Tailwind CSS.
+Christine Okoth's portfolio, in two sides. Built with Next.js 16, TypeScript, Tailwind CSS and [chess.js](https://github.com/jhlywa/chess.js).
 
-Every section renders on load and reads top to bottom. The interactive shell opens anywhere with **⌘K** (or Ctrl+K, or the `shell` button). Type `help` to see what it can do.
+- **Play** (`/`): you play white in a real game of chess. Each kind of move unlocks a Lego brick with part of the story: a pawn move, a knight, a bishop, a capture, your queen, a check, and checkmate. Hint walks you through Légal's mate, a famous seven-move win; "show me everything" unlocks it all.
+- **Terminal** (`/terminal`): the same content as a shell. Type `help`. Tab completes, ↑ recalls history.
+
+⌘K (Ctrl+K) flips between the sides.
 
 ## Content
 
-Everything on the page and in the shell comes from `src/data/`:
+Everything on both sides comes from `src/data/`:
 
 | File | What it holds |
 |---|---|
-| `profile.ts` | name, pitch, links, education, story, fun facts |
-| `projects.ts` | projects, client work (described, never linked), archive |
+| `profile.ts` | name, pitch, links, education, the pawn's path, story, fun facts |
+| `projects.ts` | your own projects, client work, and the early archive |
 | `experience.ts` | roles with dates |
-| `skills.ts` | skills; each one links to the projects whose `stack` uses it |
-| `activity.ts` | commits per month for the chart in the Robin section |
+| `skills.ts` | skills; each links to the projects whose `stack` uses it |
+| `game.ts` | the bricks: what unlocks each, the lines they say, and Légal's mate |
 
-Writing pulls the latest Medium and Substack posts from their RSS feeds, refreshed daily.
-
-## Look
-
-Light mode is line-printer paper; dark mode is a phosphor screen. Colours are tokens in `src/app/globals.css`. There are four palettes: violet (default), amber, ice and green. Visitors switch them with `theme` in the shell, and light/dark with the header button or `mode`.
+The writing brick pulls the latest Medium and Substack posts from their RSS feeds, refreshed daily.
 
 ## Scripts
 

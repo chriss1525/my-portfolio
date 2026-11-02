@@ -1,48 +1,30 @@
-"use client";
-
 import Link from "next/link";
-import { Moon, Sun, Terminal } from "lucide-react";
-import { useSyncExternalStore } from "react";
-import { currentTheme, setTheme, subscribeTheme } from "@/lib/prefs";
-import { openShell } from "./TerminalCommands";
 
-const sections = ["now", "projects", "experience", "skills", "writing", "contact"];
-
-export default function Header() {
-  const theme = useSyncExternalStore(subscribeTheme, currentTheme, () => null);
-  const toggle = () => setTheme(currentTheme() === "dark" ? "light" : "dark");
-
+/** Top bar with the play / terminal switch. */
+export default function Header({ side }: { side: "play" | "terminal" }) {
+  const pill = "flex items-center gap-2 rounded-full px-4 py-1.5";
+  const on = `${pill} bg-fg font-semibold text-bg`;
+  const off = `${pill} text-dim hover:text-fg`;
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-bg/90 backdrop-blur">
-      <nav className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3 md:px-6" aria-label="Main">
-        <Link href="#top" className="font-mono font-semibold text-accent">
-          ~/{"chriss"}
+    <header className="mx-auto flex max-w-[1360px] flex-wrap items-center justify-between gap-4 px-4 py-4 md:px-7">
+      <Link href="/" className="font-mono font-semibold text-blue">
+        ~/chriss
+      </Link>
+      <nav aria-label="Choose a side" className="flex rounded-full border-2 border-[#3a3a42] bg-surface p-1 font-mono text-[13px]">
+        <Link href="/" aria-current={side === "play" ? "page" : undefined} className={side === "play" ? on : off}>
+          <span aria-hidden="true" className="text-base leading-none">
+            ♞{"︎"}
+          </span>
+          play
         </Link>
-        <div className="hidden gap-5 font-mono text-sm text-dim md:flex">
-          {sections.map((s) => (
-            <a key={s} href={`#${s}`} className="transition-colors hover:text-accent">
-              {s}
-            </a>
-          ))}
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={toggle}
-            className="rounded-md border border-line p-1.5 text-dim transition-colors hover:text-accent"
-            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-          >
-            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </button>
-          <button
-            onClick={openShell}
-            className="flex items-center gap-2 rounded-md border border-line px-2.5 py-1 font-mono text-xs text-dim transition-colors hover:border-accent hover:text-accent"
-          >
-            <Terminal className="h-3.5 w-3.5" />
-            <span>shell</span>
-            <kbd className="hidden text-[10px] sm:inline">⌘K</kbd>
-          </button>
-        </div>
+        <Link href="/terminal" aria-current={side === "terminal" ? "page" : undefined} className={side === "terminal" ? on : off}>
+          <span aria-hidden="true">&gt;_</span>
+          terminal
+        </Link>
       </nav>
+      <span className="hidden font-mono text-xs text-dim sm:inline">
+        <kbd>⌘K</kbd> flips sides
+      </span>
     </header>
   );
 }

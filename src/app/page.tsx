@@ -1,27 +1,19 @@
 import Header from "@/components/Header";
-import Hero from "@/components/Hero";
-import Now from "@/components/Now";
-import Projects from "@/components/Projects";
-import Timeline from "@/components/Timeline";
-import Skills from "@/components/Skills";
-import Writing from "@/components/Writing";
-import Contact from "@/components/Contact";
-import TerminalCommands from "@/components/TerminalCommands";
+import ChessGame from "@/components/ChessGame";
+import { latestPosts } from "@/lib/feeds";
 
-export default function Home() {
+export default async function Home() {
+  const [medium, substack] = await Promise.all([
+    latestPosts("https://medium.com/feed/@okothchris15"),
+    latestPosts("https://amadwoman.substack.com/feed"),
+  ]);
   return (
     <>
-      <Header />
-      <main className="mx-auto max-w-5xl px-4 md:px-6">
-        <Hero />
-        <Now />
-        <Projects />
-        <Timeline />
-        <Skills />
-        <Writing />
-        <Contact />
+      <Header side="play" />
+      <main>
+        <h1 className="sr-only">Christine Okoth, fullstack engineer: a portfolio you play as a game of chess</h1>
+        <ChessGame writing={{ medium, substack }} />
       </main>
-      <TerminalCommands />
     </>
   );
 }
