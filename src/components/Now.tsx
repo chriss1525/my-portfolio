@@ -26,7 +26,7 @@ export default function Now() {
           <p className="font-mono text-xs text-dim">TypeScript · Hono · PostgreSQL + pgvector · Next.js · MCP · BullMQ</p>
           {robin.link && (
             <a href={robin.link} target="_blank" rel="noreferrer" className="inline-block font-mono text-sm text-accent underline underline-offset-4">
-              withrobin.ai →
+              withrobin.ai/knowledge →
             </a>
           )}
         </div>

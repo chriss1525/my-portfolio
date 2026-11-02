@@ -13,7 +13,7 @@ export const experience: Role[] = [
     company: "Robin",
     start: "05/2026",
     end: "now",
-    link: "https://withrobin.ai",
+    link: "https://withrobin.ai/knowledge",
     points: [
       "Build across Robin's server, web app and AI pipeline: the API, the agent that turns conversations into notes and wikis, and the MCP tools AI clients use.",
       "Work on the permissions model and database migrations for a single-tenant product where every organisation runs its own instance.",
