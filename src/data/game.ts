@@ -1,4 +1,4 @@
-/** The chess game on the play side: what each brick is, what unlocks it, and the lines it says. */
+/** The chess game: what each brick is, what unlocks it, and the lines it says. */
 
 export interface Brick {
   label: string;
@@ -103,12 +103,12 @@ export const bricks: Brick[] = [
   },
   {
     label: "fun facts",
-    how: "castle (or capture en passant)",
+    how: "find every brick: it's the bonus",
     bg: "#e4adc8",
     fg: "#1b1b1f",
     width: 230,
-    eyebrows: ["you castled · fun facts", "fun facts again"],
-    headings: ["You castled. Time to get personal.", "Still here? Here’s more of me."],
+    eyebrows: ["bonus · fun facts", "bonus · fun facts again"],
+    headings: ["One more thing. Time to get personal.", "Still here? Here’s more of me."],
   },
   {
     label: "say hello",
@@ -125,7 +125,8 @@ export const bricks: Brick[] = [
 export const SPECIAL = {
   mate: { eyebrow: "checkmate · say hello" },
   allFound: { eyebrow: "you found all the others · say hello" },
-  enPassant: { eyebrow: "en passant · fun facts", heading: "En passant! Nobody believes that’s legal. Here’s more you won’t believe." },
+  enPassant: { eyebrow: "en passant · levelling up", heading: "En passant! Nobody believes that’s legal. Here’s what pushed me." },
+  castle: { eyebrow: "you castled · where I started", heading: "You castled. Safe at home, back where I started." },
   promotion: {
     eyebrow: "your pawn became a queen · who I am",
     note: "Your pawn walked all the way and became a queen. So did I: B.Ed, instructional design, UX, ALX, blockchain, AI.",

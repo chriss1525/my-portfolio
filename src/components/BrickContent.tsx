@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { useState } from "react";
 import { profile } from "@/data/profile";
 import { experience } from "@/data/experience";
 import { allProjects, clientWork, learning, levellingUp, onChain, type Project } from "@/data/projects";
@@ -84,19 +84,6 @@ export default function BrickContent({
           <p className="mt-3">
             New to chess? Press <strong>hint</strong> and follow the glow. In a hurry? Press <strong>show me everything</strong>.
           </p>
-          <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t-2 border-dashed border-black/20 pt-5">
-            <p className="font-mono text-sm">
-              <span className="font-semibold">Technical? Prefer the command line?</span>
-              <br />
-              <span className="opacity-75">Everything here works as a shell too.</span>
-            </p>
-            <Link
-              href="/terminal"
-              className="flex items-center gap-2 rounded-lg border-2 border-black bg-[#1b1b1f] px-3.5 py-2 font-mono text-[13px] font-semibold text-white shadow-[0_3px_0_#000]"
-            >
-              <span aria-hidden="true">&gt;_</span> switch to the terminal side
-            </Link>
-          </div>
         </>
       );
 
@@ -152,7 +139,7 @@ export default function BrickContent({
               <p className="mb-1 font-mono text-[11px] font-semibold opacity-75">ABOUT</p>
               <p>{profile.location}</p>
               <p className="mt-1.5">{profile.languages.join(", ")}</p>
-              <p className="mt-1.5">Writer, former vocalist, chess fan</p>
+              <p className="mt-1.5">Writer, creative, chess fan</p>
             </Panel>
           </div>
         </>
@@ -304,14 +291,7 @@ export default function BrickContent({
         <>
           {eyebrowLine}
           <h2 className={heading}>{title}</h2>
-          <ul className="mt-4 flex flex-col gap-2.5 text-[14px]">
-            {profile.funfacts.map((fact) => (
-              <li key={fact}>
-                <Panel tint={tint}>{fact}</Panel>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-4 font-mono text-xs opacity-80">{profile.languages.join(" · ")}</p>
+          <Fortune tint={tint} />
         </>
       );
 
@@ -341,4 +321,89 @@ export default function BrickContent({
         </>
       );
   }
+}
+
+/**
+ * The fun facts as a card reading: the visitor turns my cards one by one, and every card turned
+ * stays face up, so by the end they hold every fact. Shuffle deals them again.
+ */
+function Fortune({ tint }: { tint: string }) {
+  const deck = profile.funfacts;
+  // The backs all look alike, so whichever one is tapped, the next card in the deck's order is
+  // revealed: the reading always tells the story in order. `picked` holds the backs tapped.
+  const [picked, setPicked] = useState<number[]>([]);
+  const turned = deck.map((_, i) => i).slice(0, picked.length);
+  const left = deck.map((_, i) => i).filter((i) => !picked.includes(i));
+  const done = left.length === 0;
+
+  return (
+    <div className="mt-4">
+      <p className="text-[15px]">If I could see you, I’d read your mind. For now, read my cards.</p>
+
+      {!done && (
+        <>
+          <p className="mb-3 mt-4 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] opacity-80">
+            Turn a card · {turned.length} of {deck.length}
+          </p>
+          <div className="flex flex-wrap gap-2.5 pl-1">
+            {left.map((i, n) => (
+              <button
+                key={i}
+                onClick={() => setPicked((t) => [...t, i])}
+                aria-label={`Turn a card (${left.length} left)`}
+                className="relative flex h-[84px] w-[58px] items-center justify-center rounded-md border-2 border-[#ffd500] bg-[#1b1b1f] text-[22px] text-[#ffd500] shadow-[0_4px_0_rgba(0,0,0,.35)] transition-transform [transform:rotate(var(--r))] hover:[transform:translateY(-6px)] focus-visible:[transform:translateY(-6px)]"
+                style={{ ["--r" as string]: `${((n % 5) - 2) * 3}deg` }}
+              >
+                <span aria-hidden="true" className="absolute inset-1 rounded-[3px] border border-[#ffd500]/40 bg-[radial-gradient(circle,rgba(255,213,0,.18)_1px,transparent_1.5px)] bg-[length:8px_8px]" />
+                <span aria-hidden="true" className="relative">
+                  ✦{"\uFE0E"}
+                </span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      {turned.length > 0 && (
+        <ol className="mt-5 flex flex-col gap-2.5 text-[14px]">
+          {turned.map((i) => {
+            const fact = deck[i];
+            return (
+              <li key={fact.card} className="animate-[turn_.45s_ease-out]">
+                <div className={`flex gap-3 rounded-lg px-3.5 py-3 ${tint}`}>
+                  <span aria-hidden="true" className="flex h-[52px] w-9 shrink-0 items-center justify-center rounded border-2 border-[#ffd500] bg-[#1b1b1f] text-lg text-[#ffd500]">
+                    {fact.glyph}
+                    {"\uFE0E"}
+                  </span>
+                  <div>
+                    <p className="font-mono text-[11px] font-bold uppercase tracking-[0.06em]">{fact.card}</p>
+                    <p className="mt-0.5">
+                      {fact.text}
+                      {fact.link && (
+                        <>
+                          {" "}
+                          <a href={fact.link.href} target="_blank" rel="noreferrer" className="font-semibold underline underline-offset-4">
+                            {fact.link.label}
+                          </a>
+                        </>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+
+      {done && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="font-mono text-sm font-semibold">All {deck.length} cards read. Now you know me a little better.</p>
+          <button onClick={() => setPicked([])} className="rounded-lg border-2 border-black bg-[#1b1b1f] px-3.5 py-2 font-mono text-[13px] font-semibold text-white shadow-[0_3px_0_#000]">
+            shuffle again
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }

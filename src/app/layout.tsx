@@ -1,6 +1,7 @@
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Sans, JetBrains_Mono, Martian_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { profile } from "@/data/profile";
 
@@ -31,6 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${display.variable} ${mono.variable} ${sans.variable}`}>
       <body className="font-sans antialiased">
         {children}
+        <Analytics />
         <SpeedInsights />
       </body>
     </html>

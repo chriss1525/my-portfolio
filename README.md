@@ -1,15 +1,12 @@
 # ~/chriss
 
-Christine Okoth's portfolio, in two sides. Built with Next.js 16, TypeScript, Tailwind CSS and [chess.js](https://github.com/jhlywa/chess.js).
+Christine Okoth's portfolio, played as a game of chess. Built with Next.js 16, TypeScript, Tailwind CSS and [chess.js](https://github.com/jhlywa/chess.js).
 
-- **Play** (`/`): you play white in a real game of chess. Each kind of move unlocks a Lego brick with part of the story: a pawn move, a knight, a bishop, a capture, your queen, a check, and checkmate. Hint walks you through Légal's mate, a famous seven-move win; "show me everything" unlocks it all.
-- **Terminal** (`/terminal`): the same content as a shell. Type `help`. Tab completes, ↑ recalls history.
-
-⌘K (Ctrl+K) flips between the sides.
+You play white in a real game of chess. Each kind of move unlocks a Lego brick with part of the story: a pawn move, a knight, a bishop, a capture, your queen, a check, and checkmate. Hint walks you through Légal's mate, a famous seven-move win; "show me everything" shows every brick on one page.
 
 ## Content
 
-Everything on both sides comes from `src/data/`:
+Everything comes from `src/data/`:
 
 | File | What it holds |
 |---|---|

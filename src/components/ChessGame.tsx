@@ -1,7 +1,6 @@
 "use client";
 import { Chess, type PieceSymbol, type Square } from "chess.js";
-import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { LOSSES, QUEEN_LOST, SPECIAL, bricks, legalsMate, quietMoves } from "@/data/game";
 import { botMove } from "@/lib/bot";
 import BrickContent, { type Writing } from "./BrickContent";
@@ -12,7 +11,19 @@ const FILES = "abcdefgh";
 
 /** Brick indexes, matching `bricks` in data/game.ts. */
 const B = { pawn: 0, knight: 1, bishop: 2, king: 3, capture: 4, rook: 5, queen: 6, check: 7, fun: 8, mate: 9 } as const;
-const OTHERS = bricks.length - 1;
+/** Fun facts is the bonus: it isn't won by a move, and lands on top once every other brick is found. */
+const COUNTED = bricks.length - 1;
+/** The reading order: every brick, then the bonus last. */
+const READ = [...bricks.keys()].filter((i) => i !== B.fun).concat(B.fun);
+const found = (order: number[]) => order.filter((i) => i !== B.fun).length;
+
+/** Finding every brick but say hello unlocks it; say hello brings the bonus with it. */
+function settle(order: number[]) {
+  let o = order;
+  if (found(o) === COUNTED - 1) o = unlock(o, B.mate);
+  if (o.includes(B.mate)) o = unlock(o, B.fun);
+  return o;
+}
 
 interface Special {
   brick: number;
@@ -45,6 +56,8 @@ interface State {
   sheet: boolean;
   /** Phones: the bottom bar is announcing a brick that was just won. */
   barNew: boolean;
+  /** Every brick on one page: "all" from show me everything, "won" after finding every brick. */
+  reading: "all" | "won" | null;
 }
 
 const fresh = (): State => ({
@@ -65,7 +78,11 @@ const fresh = (): State => ({
   message: "Your move. Try anything.",
   sheet: false,
   barNew: false,
+  reading: null,
 });
+
+/** Wide screens show the open brick beside the board; only narrow ones use the sheet. */
+const wide = () => typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches;
 
 /** How long black "thinks" before replying, in ms: 1.3–2.2 s, so it doesn't feel instant. */
 const thinkTime = () => 1300 + Math.random() * 900;
@@ -75,9 +92,10 @@ function unlock(order: number[], i: number) {
 }
 
 export default function ChessGame({ writing }: { writing: Writing }) {
-  const router = useRouter();
   const [st, setSt] = useState<State>(fresh);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const board = useRef<HTMLDivElement>(null);
+  const boardPin = usePin(board);
   const game = useMemo(() => new Chess(st.fen), [st.fen]);
 
   const clearTimers = () => {
@@ -87,20 +105,9 @@ export default function ChessGame({ writing }: { writing: Writing }) {
   const later = (fn: () => void, ms: number) => timers.current.push(setTimeout(fn, ms));
   useEffect(() => clearTimers, []);
 
-  // ⌘K / Ctrl+K flips to the terminal side.
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        router.push("/terminal");
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [router]);
-
-  useEffect(() => {
-    document.body.style.overflow = st.sheet ? "hidden" : "";
+    // The sheet is hidden on wide screens, so it must never freeze their scrolling.
+    document.body.style.overflow = st.sheet && !wide() ? "hidden" : "";
   }, [st.sheet]);
 
   const over = game.isGameOver();
@@ -125,7 +132,8 @@ export default function ChessGame({ writing }: { writing: Writing }) {
     else if (checkers.length && !checkers.includes(to)) special = { brick: B.check, ...SPECIAL.discoveredCheck };
     else if (checker === "n") special = { brick: B.check, ...SPECIAL.knightCheck };
     else if (checker === "q") special = { brick: B.check, ...SPECIAL.queenCheck };
-    else if (enPassant) special = { brick: B.fun, ...SPECIAL.enPassant };
+    else if (enPassant) special = { brick: B.capture, ...SPECIAL.enPassant };
+    else if (castled) special = { brick: B.king, ...SPECIAL.castle };
     else if (m.captured) special = { brick: B.capture, ...SPECIAL.took[m.captured] };
 
     const hits: number[] = [];
@@ -133,21 +141,20 @@ export default function ChessGame({ writing }: { writing: Writing }) {
     if (m.promotion) hits.push(B.pawn);
     if (g.isCheck()) hits.push(B.check);
     if (m.captured) hits.push(B.capture);
-    if (castled || enPassant) hits.push(B.fun);
     if (m.piece === "q") hits.push(B.queen);
     if (m.piece === "r") hits.push(B.rook);
-    if (m.piece === "k" && !castled) hits.push(B.king);
+    if (m.piece === "k") hits.push(B.king);
     if (m.piece === "b") hits.push(B.bishop);
     if (m.piece === "n") hits.push(B.knight);
     if (m.piece === "p") hits.push(B.pawn);
 
     let order = st.order;
     hits.forEach((i) => (order = unlock(order, i)));
-    if (order.length === OTHERS && !order.includes(B.mate)) {
-      order = unlock(order, B.mate);
+    if (found(order) === COUNTED - 1 && !order.includes(B.mate)) {
       hits.push(B.mate);
       special ??= { brick: B.mate, ...SPECIAL.allFound };
     }
+    order = settle(order);
     const newly = order.filter((i) => !st.order.includes(i));
     const pick = special ? special.brick : newly.length ? newly[newly.length - 1] : hits.length ? hits[0] : -1;
     const visits = pick > -1 ? { ...st.visits, [pick]: (st.visits[pick] ?? 0) + 1 } : st.visits;
@@ -193,7 +200,7 @@ export default function ChessGame({ writing }: { writing: Writing }) {
           o = unlock(o, B.queen);
           open = B.queen + 1;
           special = null;
-          if (o.length === OTHERS) o = unlock(o, B.mate);
+          o = settle(o);
         }
         const loss = !onLine && reply.captured ? `${LOSSES[reply.captured]} ` : "";
         return {
@@ -230,10 +237,14 @@ export default function ChessGame({ writing }: { writing: Writing }) {
     playWhite(legal.from, legal.to);
   }
 
-  function showAll() {
-    clearTimers();
-    setSt((s) => ({ ...s, order: bricks.map((_, i) => i), open: 1, onLine: false, thinking: false, hint: false, barNew: false, message: "Everything is unlocked. Tap any brick." }));
+  /** Reading everything is a look, not a win: the game, and the bricks found in it, wait as they were. */
+  function read(reading: "all" | "won") {
+    setSt((s) => ({ ...s, sheet: false, reading }));
+    window.scrollTo(0, 0);
   }
+  const showAll = () => read("all");
+  const openBonus = () => setSt((s) => ({ ...s, open: B.fun + 1, queenLost: false, special: null, sheet: !wide(), barNew: false }));
+  const readAll = () => read("won");
 
   function replay() {
     clearTimers();
@@ -259,7 +270,7 @@ export default function ChessGame({ writing }: { writing: Writing }) {
         }, 1700 + i * 1600);
       }
     });
-    later(() => setSt((s) => ({ ...s, thinking: false, onLine: true, special: { brick: B.mate, ...SPECIAL.mate }, message: "Légal’s mate, 1750. Seven moves. Some bricks are still hidden: try castling, your king and your rooks." })), 900 + 6 * 1600 + 300);
+    later(() => setSt((s) => ({ ...s, order: settle(s.order), thinking: false, onLine: true, special: { brick: B.mate, ...SPECIAL.mate }, message: "Légal’s mate, 1750. Seven moves. Some bricks are still hidden: try castling, your king and your rooks." })), 900 + 6 * 1600 + 300);
   }
 
   // What the board shows.
@@ -268,7 +279,8 @@ export default function ChessGame({ writing }: { writing: Writing }) {
   const mated = game.isCheckmate();
   const rows = game.board();
 
-  const done = st.order.length === bricks.length;
+  const done = found(st.order) === COUNTED;
+  const bonus = st.order.includes(B.fun);
   const cur = st.open > 0 ? bricks[st.open - 1] : { bg: "#ffffff", fg: "#1b1b1f" };
   const light = cur.fg !== "#ffffff";
   const visitsOf = (i: number) => Math.max(0, (st.visits[i] ?? 1) - 1);
@@ -284,24 +296,39 @@ export default function ChessGame({ writing }: { writing: Writing }) {
     eyebrow = special.eyebrow;
     if (special.heading) title = special.heading;
   }
-  const locked = bricks.map((b, i) => ({ b, i })).filter(({ i }) => !st.order.includes(i));
+  const locked = bricks.map((b, i) => ({ b, i })).filter(({ i }) => i !== B.fun && !st.order.includes(i));
   const message = st.hint ? (target ? legalsMate[st.moves].hint : "You’ve left the famous line, so try what’s still hidden.") : st.message;
   const brickProps = { open: st.open, eyebrow, title, note: special?.note, finale: mated ? "Checkmate." : "Built.", tint: light ? "bg-black/[.08]" : "bg-white/[.12]", writing };
   const btn = "whitespace-nowrap rounded-lg border-2 border-black px-3.5 py-2 font-mono text-[13px] shadow-[0_3px_0_#000] active:translate-y-[2px] active:shadow-[0_1px_0_#000]";
 
+  if (st.reading) {
+    return (
+      <Reading
+        won={st.reading === "won"}
+        moves={st.moves}
+        mated={mated}
+        writing={writing}
+        onBack={() => {
+          setSt((s) => ({ ...s, reading: null }));
+          window.scrollTo(0, 0);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="mx-auto flex max-w-[1360px] flex-wrap items-start justify-center gap-8 px-4 pb-28 pt-1 md:px-7 lg:gap-11 lg:pb-14">
-      <div className="w-full min-w-0 max-w-[600px] flex-[0_1_600px]">
+      <div ref={board} className={`w-full min-w-0 max-w-[600px] flex-[0_1_600px] lg:max-w-[min(600px,calc(100vh-200px))] ${boardPin === null ? "" : "lg:sticky"}`} style={{ top: boardPin ?? undefined }}>
         <div className="mb-3 flex items-baseline justify-between gap-3">
           <p className="whitespace-nowrap font-display text-[17px] font-extrabold tracking-tight sm:text-[22px]">
             {mated ? (game.turn() === "b" ? "Checkmate." : "Checkmated.") : over ? "Draw." : st.thinking ? "Black to move…" : done ? "Built." : "Your move."}
           </p>
           <p className="whitespace-nowrap font-mono text-xs text-dim">
             <span className="sm:hidden">
-              {st.order.length}/{bricks.length} bricks
+              {found(st.order)}/{COUNTED} bricks
             </span>
             <span className="hidden sm:inline">
-              {st.order.length} of {bricks.length} bricks · {over ? `${st.moves} moves` : `move ${st.moves + 1}`}
+              {found(st.order)} of {COUNTED} bricks · {over ? `${st.moves} moves` : `move ${st.moves + 1}`}
             </span>
           </p>
         </div>
@@ -388,6 +415,16 @@ export default function ChessGame({ writing }: { writing: Writing }) {
             {message}
           </p>
           <div className="flex flex-wrap gap-2">
+            {bonus && (
+              <button onClick={openBonus} className={`${btn} bg-[#e4adc8] font-semibold text-[#1b1b1f]`}>
+                one more thing: read my cards →
+              </button>
+            )}
+            {done && (
+              <button onClick={readAll} className={`${btn} bg-[#00852b] font-semibold text-white`}>
+                read it all
+              </button>
+            )}
             {done && !mated && (
               <button onClick={replay} className={`${btn} bg-[#c91a09] font-semibold text-white`}>
                 show me the mate
@@ -422,23 +459,15 @@ export default function ChessGame({ writing }: { writing: Writing }) {
           </button>
         </div>
 
-        <div
+        <BrickCard
           key={`${st.open}-${st.visits[st.open - 1] ?? 0}-${st.queenLost}-${special?.eyebrow ?? ""}`}
-          aria-live="polite"
-          className={`relative mt-3 animate-[drop_.5s_ease-out] rounded-[10px] px-6 pb-8 pt-7 md:px-7 ${st.open === 0 ? "" : "hidden lg:block"}`}
-          style={{
-            background: cur.bg,
-            color: cur.fg,
-            boxShadow: "inset 0 -8px 0 rgba(0,0,0,.18), inset 0 3px 0 rgba(255,255,255,.3), 0 8px 0 rgba(0,0,0,.25)",
-          }}
+          bg={cur.bg}
+          fg={cur.fg}
+          capped
+          className={`mt-3 animate-[drop_.5s_ease-out] ${st.open === 0 ? "" : "hidden lg:block"}`}
         >
-          <div aria-hidden="true" className="absolute -top-3 left-5 right-5 flex justify-between">
-            {Array.from({ length: 8 }, (_, i) => (
-              <span key={i} className="h-[19px] w-[34px] rounded-t-[4px] rounded-b-[2px]" style={{ background: cur.bg, boxShadow: "inset 0 3px 0 rgba(255,255,255,.35), inset 0 -2px 0 rgba(0,0,0,.18)" }} />
-            ))}
-          </div>
           <BrickContent {...brickProps} />
-        </div>
+        </BrickCard>
 
         <div>
           <p className="mb-1 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-dim lg:hidden">Your bricks · tap to open</p>
@@ -446,29 +475,26 @@ export default function ChessGame({ writing }: { writing: Writing }) {
             {st.order.map((k, i) => {
               const b = bricks[k];
               return (
-                <button
+                <TowerBrick
                   key={k}
-                  onClick={() => setSt((s) => ({ ...s, open: k + 1, queenLost: false, special: null, sheet: true, barNew: false }))}
-                  aria-label={`Open brick: ${b.label}`}
-                  className={`relative h-[42px] w-auto max-w-full shrink-0 rounded px-4 font-mono text-[13px] font-semibold lg:mt-2 lg:w-[var(--w)] lg:px-0 ${i === st.order.length - 1 ? "animate-[drop_.45s_ease-out]" : ""}`}
-                  style={{
-                    ["--w" as string]: `${b.width}px`,
-                    background: b.bg,
-                    color: b.fg,
-                    boxShadow: `inset 0 -5px 0 rgba(0,0,0,.2), inset 0 2px 0 rgba(255,255,255,.3)${st.open === k + 1 ? ", 0 0 0 3px #ecebe7" : ""}`,
-                  }}
-                >
-                  <span aria-hidden="true" className="absolute -top-2 left-3.5 right-3.5 hidden justify-between lg:flex">
-                    {Array.from({ length: Math.max(2, Math.round(b.width / 60)) }, (_, j) => (
-                      <span key={j} className="h-3 w-[22px] rounded-t-[4px] rounded-b-[2px]" style={{ background: b.bg, boxShadow: "inset 0 3px 0 rgba(255,255,255,.35), inset 0 -2px 0 rgba(0,0,0,.18)" }} />
-                    ))}
-                  </span>
-                  {b.label}
-                </button>
+                  b={b}
+                  active={st.open === k + 1}
+                  className={i === st.order.length - 1 ? "animate-[drop_.45s_ease-out]" : ""}
+                  onClick={() => setSt((s) => ({ ...s, open: k + 1, queenLost: false, special: null, sheet: !wide(), barNew: false }))}
+                />
               );
             })}
+            {!bonus && (
+              <button
+                onClick={() => setSt((s) => ({ ...s, message: "That’s the bonus brick. Find every other brick and it’s yours. In a hurry? Show me everything has it too." }))}
+                aria-label="Bonus brick, locked: find every brick to unlock it"
+                className="relative h-[42px] shrink-0 whitespace-nowrap rounded border-2 border-dashed border-[#ffd500] px-4 font-mono text-[12px] font-semibold text-[#ffd500] lg:mt-2 lg:w-[230px]"
+              >
+                ✦{"\uFE0E"} bonus: find every brick
+              </button>
+            )}
           </div>
-          <div aria-hidden="true" className="h-[18px] rounded bg-[#00852b] bg-[radial-gradient(circle_at_9px_6px,rgba(255,255,255,.35)_4px,transparent_4.5px)] bg-[length:18px_18px] shadow-[inset_0_-4px_0_rgba(0,0,0,.2)]" />
+          <div aria-hidden="true" className={BASEPLATE} />
           <p className="mt-2 font-mono text-xs text-dim">
             {st.order.length === 0 ? "Your build starts here." : done ? "Every brick. That’s me. Open any brick again from the tower." : "Open any brick again from the tower."}
           </p>
@@ -531,4 +557,244 @@ export default function ChessGame({ writing }: { writing: Writing }) {
       )}
     </div>
   );
+}
+
+const STUDS = "inset 0 3px 0 rgba(255,255,255,.35), inset 0 -2px 0 rgba(0,0,0,.18)";
+
+/**
+ * The big brick a section is shown on. `capped` (the game's open brick) holds it to the
+ * screen's height on wide screens: the content scrolls inside it, with a fade while there is more.
+ */
+function BrickCard({ bg, fg, capped, className = "", id, children }: { bg: string; fg: string; capped?: boolean; className?: string; id?: string; children: React.ReactNode }) {
+  const box = useRef<HTMLDivElement>(null);
+  const [more, setMore] = useState(false);
+  const check = () => {
+    const el = box.current;
+    if (el) setMore(el.scrollHeight - el.scrollTop - el.clientHeight > 4);
+  };
+  useEffect(() => {
+    if (!capped) return;
+    check();
+    const ro = new ResizeObserver(check);
+    if (box.current) ro.observe(box.current);
+    return () => ro.disconnect();
+  }, [capped]);
+
+  return (
+    <div
+      id={id}
+      className={`relative rounded-[10px] ${className}`}
+      style={{ background: bg, color: fg, boxShadow: "inset 0 -8px 0 rgba(0,0,0,.18), inset 0 3px 0 rgba(255,255,255,.3), 0 8px 0 rgba(0,0,0,.25)" }}
+    >
+      <div aria-hidden="true" className="absolute -top-3 left-5 right-5 flex justify-between">
+        {Array.from({ length: 8 }, (_, i) => (
+          <span key={i} className="h-[19px] w-[34px] rounded-t-[4px] rounded-b-[2px]" style={{ background: bg, boxShadow: STUDS }} />
+        ))}
+      </div>
+      <div
+        ref={box}
+        onScroll={capped ? check : undefined}
+        tabIndex={capped && more ? 0 : undefined}
+        className={`px-6 pb-8 pt-7 md:px-7 ${capped ? "lg:max-h-[calc(100vh-210px)] lg:overflow-y-auto lg:overscroll-contain" : ""}`}
+      >
+        {children}
+      </div>
+      {capped && more && (
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-2 hidden h-20 items-end justify-center rounded-b-[10px] pb-1 lg:flex" style={{ background: `linear-gradient(to bottom, transparent, ${bg})` }}>
+          <span className="font-mono text-[11px] font-semibold opacity-70">scroll for more ↓</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** A brick in a tower: a pill on phones, a studded brick of its own width on wide screens. */
+function TowerBrick({ b, active, faded, className = "", onClick }: { b: (typeof bricks)[number]; active: boolean; faded?: boolean; className?: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label={`Open brick: ${b.label}`}
+      aria-current={active || undefined}
+      className={`relative h-[42px] w-auto max-w-full shrink-0 whitespace-nowrap rounded px-4 font-mono text-[13px] font-semibold transition-[opacity,transform,box-shadow] duration-300 lg:mt-2 lg:w-[var(--w)] lg:px-0 ${active ? "z-10 scale-105 lg:translate-x-4 lg:scale-110" : faded ? "opacity-35 hover:opacity-80" : ""} ${className}`}
+      style={{
+        ["--w" as string]: `${b.width}px`,
+        background: b.bg,
+        color: b.fg,
+        boxShadow: `inset 0 -5px 0 rgba(0,0,0,.2), inset 0 2px 0 rgba(255,255,255,.3)${active ? `, 0 0 0 3px #ecebe7, 0 0 28px 4px ${b.bg}` : ""}`,
+      }}
+    >
+      <span aria-hidden="true" className="absolute -top-2 left-3.5 right-3.5 hidden justify-between lg:flex">
+        {Array.from({ length: Math.max(2, Math.round(b.width / 60)) }, (_, j) => (
+          <span key={j} className="h-3 w-[22px] rounded-t-[4px] rounded-b-[2px]" style={{ background: b.bg, boxShadow: STUDS }} />
+        ))}
+      </span>
+      {b.label}
+    </button>
+  );
+}
+
+const BASEPLATE = "h-[18px] rounded bg-[#00852b] bg-[radial-gradient(circle_at_9px_6px,rgba(255,255,255,.35)_4px,transparent_4.5px)] bg-[length:18px_18px] shadow-[inset_0_-4px_0_rgba(0,0,0,.2)]";
+
+/**
+ * Every brick on one page, for someone who chose show me everything or found every brick.
+ * The tower is the map: tap a brick to jump to it, and the brick you're reading is outlined.
+ */
+function Reading({ won, moves, mated, writing, onBack }: { won: boolean; moves: number; mated: boolean; writing: Writing; onBack: () => void }) {
+  const [active, setActive] = useState(0);
+  const strip = useRef<HTMLDivElement>(null);
+  const tower = useRef<HTMLDivElement>(null);
+  const pin = usePin(tower);
+  const chosen = useRef<number | null>(null);
+
+  useEffect(() => {
+    // The brick being read is the last card whose top has passed 45% of the screen; the last card
+    // also counts once it is wholly on screen, since it may never reach that line.
+    let frame = 0;
+    const pick = () => {
+      frame = 0;
+      const cards = [...document.querySelectorAll<HTMLElement>("[data-brick]")];
+      if (!cards.length) return;
+      // A brick tapped in the tower stays lit while its card is on screen, until the reader scrolls on.
+      const tapped = chosen.current === null ? null : document.getElementById(`brick-${chosen.current}`);
+      if (tapped) {
+        const r = tapped.getBoundingClientRect();
+        if (r.top < window.innerHeight && r.bottom > 0) return setActive(chosen.current!);
+      }
+      let on = cards[0];
+      for (const c of cards) if (c.getBoundingClientRect().top <= window.innerHeight * 0.45) on = c;
+      const last = cards[cards.length - 1];
+      if (last.getBoundingClientRect().bottom <= window.innerHeight) on = last;
+      setActive(Number(on.dataset.i));
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(pick);
+    };
+    const moving = () => (chosen.current = null);
+    const keys = (e: KeyboardEvent) => ["ArrowDown", "ArrowUp", "PageDown", "PageUp", " ", "Home", "End"].includes(e.key) && moving();
+    pick();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    window.addEventListener("wheel", moving, { passive: true });
+    window.addEventListener("touchmove", moving, { passive: true });
+    window.addEventListener("keydown", keys);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      window.removeEventListener("wheel", moving);
+      window.removeEventListener("touchmove", moving);
+      window.removeEventListener("keydown", keys);
+    };
+  }, []);
+
+  // Phones: keep the brick being read in view in the strip.
+  useEffect(() => {
+    const row = strip.current;
+    const tab = row?.querySelector<HTMLElement>(`[data-tab="${active}"]`);
+    if (row && tab) row.scrollTo({ left: tab.offsetLeft - row.clientWidth / 2 + tab.clientWidth / 2, behavior: "smooth" });
+  }, [active]);
+
+  const jump = (i: number) => {
+    chosen.current = i;
+    setActive(i);
+    document.getElementById(`brick-${i}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+  const back = "whitespace-nowrap rounded-lg border-2 border-black bg-raised px-3.5 py-2 font-mono text-[13px] text-fg shadow-[0_3px_0_#000] active:translate-y-[2px] active:shadow-[0_1px_0_#000]";
+
+  const title = (
+    <div>
+      {won ? (
+        <div className="rounded-[10px] bg-[#ffd500] px-5 py-4 text-[#1b1b1f] shadow-[inset_0_-6px_0_rgba(0,0,0,.18),0_6px_0_rgba(0,0,0,.25)]">
+          <p className="font-mono text-xs font-semibold opacity-75">{mated ? "Checkmate. " : ""}Every brick found.</p>
+          <h2 className="mt-1 font-display text-[34px] font-extrabold leading-none tracking-tight md:text-[42px]">You built it.</h2>
+          <p className="mt-2 font-mono text-[13px]">
+            {moves} moves · all {COUNTED} bricks and the bonus
+          </p>
+        </div>
+      ) : (
+        <div>
+          <p className="font-mono text-xs font-semibold text-dim">show me everything</p>
+          <h2 className="mt-1 font-display text-[30px] font-extrabold leading-none tracking-tight md:text-[38px]">Everything, in one place.</h2>
+          <p className="mt-2 text-dim">No chess needed. Scroll, or jump from the tower.</p>
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="mx-auto max-w-[1360px] px-4 pb-24 pt-1 md:px-7">
+      <div className="mb-6 flex flex-col items-start gap-4 lg:hidden">
+        <button onClick={onBack} className={back}>
+          ← back to the game
+        </button>
+        {title}
+      </div>
+
+      <div ref={strip} className="sticky top-0 z-30 -mx-4 mb-6 flex gap-2 overflow-x-auto border-b-2 border-[#2a2a30] bg-bg px-4 pb-3 pt-3 lg:hidden">
+        {READ.map((i) => (
+          <span key={i} data-tab={i}>
+            <TowerBrick b={bricks[i]} active={active === i} faded={active !== i} onClick={() => jump(i)} />
+          </span>
+        ))}
+      </div>
+
+      <div className="lg:grid lg:grid-cols-[340px_minmax(0,1fr)] lg:gap-12">
+        <aside aria-label="The tower: jump to a brick" className="hidden lg:block">
+          <div ref={tower} className={pin === null ? "" : "sticky"} style={{ top: pin ?? undefined }}>
+            <button onClick={onBack} className={`${back} mb-8`}>
+              ← back to the game
+            </button>
+            <div className="flex flex-col-reverse items-center">
+              {READ.map((i) => (
+                <TowerBrick key={i} b={bricks[i]} active={active === i} faded={active !== i} onClick={() => jump(i)} />
+              ))}
+            </div>
+            <div aria-hidden="true" className={BASEPLATE} />
+            <p className="mt-2 font-mono text-xs text-dim">Read from the ground up. Tap a brick to jump to it. The bonus on top is a little game of its own.</p>
+          </div>
+        </aside>
+
+        <div className="flex min-w-0 flex-col gap-12">
+          <div className="hidden lg:block">{title}</div>
+          {READ.map((i, n) => (
+            <div key={i} id={`brick-${i}`} data-brick data-i={i} className={`scroll-mt-24 transition-opacity duration-300 lg:scroll-mt-8 ${active === i ? "" : "opacity-55"}`}>
+              <BrickCard bg={bricks[i].bg} fg={bricks[i].fg}>
+                <BrickContent
+                  open={i + 1}
+                  eyebrow={i === B.fun ? `bonus · ${bricks[i].label}` : `${String(n + 1).padStart(2, "0")} · ${bricks[i].label}`}
+                  title={bricks[i].headings[0] ?? ""}
+                  finale={won ? (mated ? "Checkmate." : "Built.") : "Say hello."}
+                  tint={bricks[i].fg !== "#ffffff" ? "bg-black/[.08]" : "bg-white/[.12]"}
+                  writing={writing}
+                />
+              </BrickCard>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Where a column sticks so it stays exactly where it starts while the page scrolls past it,
+ * or as high as it must to fit. null when the window is too short to show it whole: then it scrolls.
+ */
+function usePin(ref: React.RefObject<HTMLElement | null>) {
+  const [pin, setPin] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    const place = () => {
+      const el = ref.current;
+      if (!el) return;
+      const h = el.offsetHeight;
+      // Measured from the parent: a column that is already stuck no longer sits where it started.
+      const parent = el.parentElement!;
+      const start = parent.getBoundingClientRect().top + window.scrollY + parseFloat(getComputedStyle(parent).paddingTop);
+      setPin(h + 32 > window.innerHeight ? null : Math.max(16, Math.min(start, window.innerHeight - h - 16)));
+    };
+    place();
+    window.addEventListener("resize", place);
+    return () => window.removeEventListener("resize", place);
+  }, [ref]);
+  return pin;
 }

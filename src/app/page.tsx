@@ -9,7 +9,7 @@ export default async function Home() {
   ]);
   return (
     <>
-      <Header side="play" />
+      <Header />
       <main>
         <h1 className="sr-only">Christine Okoth, fullstack engineer: a portfolio you play as a game of chess</h1>
         <ChessGame writing={{ medium, substack }} />
